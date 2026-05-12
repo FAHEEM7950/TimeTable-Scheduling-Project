@@ -4,12 +4,12 @@ import random
 
 
 app = Flask(__name__)
-app.secret_key = "faheem_project_key"
+app.secret_key = "Ramakrishna_project_key"
 
 db = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="@Faheem7950",
+    password="Ramakrishna@2007",
     database="timetable_db"
 )
 
