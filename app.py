@@ -209,7 +209,5 @@ def verify_otp():
             return "Invalid OTP"
 
     return render_template('verify_otp.html')
-
-
 if __name__ == '__main__':
     app.run(debug=True)
