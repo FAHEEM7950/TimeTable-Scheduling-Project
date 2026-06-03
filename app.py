@@ -253,16 +253,6 @@ def admin_view_timetable():
 def admin_logout():
     session.clear()
     return redirect('/admin_login')
-def view_students():
-    return "Students List"
-@app.route('/view_faculty')
-def view_faculty():
-    return "Faculty List"
-
-@app.route('/view_admins')
-def view_admins():
-    return "Admins List"
-
 @app.route('/admin_profile')
 def admin_profile():
     return "Admin Profile"
