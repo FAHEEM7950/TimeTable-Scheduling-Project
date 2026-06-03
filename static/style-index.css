@@ -41,7 +41,18 @@ button{
     border-radius:8px;
     cursor:pointer;
 }
+.button-row {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+}
 
+button {
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
 button:hover{
     background:#2980b9;
 }

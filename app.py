@@ -16,6 +16,80 @@ db = mysql.connector.connect(
 @app.route('/')
 def home():
     return render_template('index.html')
+@app.route('/college_register', methods=['GET', 'POST'])
+def college_register():
+
+    if request.method == 'POST':
+
+        college_name = request.form['college_name']
+        college_code = request.form['college_code']
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor = db.cursor()
+
+        query = """
+        INSERT INTO colleges
+        (college_name, college_code, email, password)
+        VALUES (%s,%s,%s,%s)
+        """
+
+        cursor.execute(query, (
+            college_name,
+            college_code,
+            email,
+            password
+        ))
+
+        db.commit()
+        cursor.close()
+
+        return redirect('/college_login')
+
+    return render_template('college_register.html')
+@app.route('/college_login', methods=['GET', 'POST'])
+def college_login():
+
+    if request.method == 'POST':
+
+        email = request.form['email']
+        password = request.form['password']
+
+        cursor = db.cursor()
+
+        query = """
+        SELECT * FROM colleges
+        WHERE email=%s AND password=%s
+        """
+
+        cursor.execute(query, (email, password))
+
+        college = cursor.fetchone()
+
+        cursor.close()
+
+        if college:
+            return redirect('/college_dashboard')
+        else:
+            return "Invalid Email or Password"
+
+    return render_template('college_login.html')
+@app.route('/college_dashboard')
+def college_dashboard():
+    return render_template('college_dashboard.html')
+@app.route('/college_logout')
+def college_logout():
+    session.clear()
+    return redirect('/college_login')
+@app.route('/view_students')
+def view_students():
+    return "Students List"
+@app.route('/view_faculty')
+def view_faculty():
+    return "Faculty List"
+@app.route('/view_admins')
+def view_admins():
+    return "Admins List"
 
 @app.route('/student_register', methods=['GET', 'POST'])
 def student_register():
@@ -174,18 +248,20 @@ def publish_timetable():
 @app.route('/admin_view_timetable')
 def admin_view_timetable():
     return render_template('admin_view_timetable.html')
-@app.route('/view_students')
-def view_students():
-    return "Students List"
-
-@app.route('/view_faculty')
-def view_faculty():
-    return "Faculty List"
 
 @app.route('/admin_logout')
 def admin_logout():
     session.clear()
     return redirect('/admin_login')
+def view_students():
+    return "Students List"
+@app.route('/view_faculty')
+def view_faculty():
+    return "Faculty List"
+
+@app.route('/view_admins')
+def view_admins():
+    return "Admins List"
 
 @app.route('/admin_profile')
 def admin_profile():
