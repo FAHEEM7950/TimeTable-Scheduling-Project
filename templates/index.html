@@ -3,7 +3,6 @@
 
 <head>
     <title>Smart Timetable</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 
@@ -11,24 +10,37 @@
 
 <div class="container">
 
-    <h1>Smart Timetable Scheduling</h1>
+    <h1>AI-BasedSmart Timetable Scheduling</h1>
 
-    <p>Based on Student Stress Levels</p>
+    <p>Using Student & Faculty Preferences with Genetic Algorithms</p>
 
-    <a href="/student_register"><button>Student Register</button></a>
+    <div class="button-row">
+        <a href="/college_register"><button>College Register</button></a>
+        <a href="/college_login"><button>College Login</button></a>
+    </div>
 
-    <a href="/student_login"><button>Student Login</button></a>
+    <br>
 
-    <a href="/faculty_register"><button>Faculty Register</button></a>
+    <div class="button-row">
+        <a href="/student_register"><button>Student Register</button></a>
+        <a href="/student_login"><button>Student Login</button></a>
+    </div>
 
-    <a href="/faculty_login"><button>Faculty Login</button></a>
+    <br>
 
-    <a href="/admin_register"><button>Admin Register</button></a>
+    <div class="button-row">
+        <a href="/faculty_register"><button>Faculty Register</button></a>
+        <a href="/faculty_login"><button>Faculty Login</button></a>
+    </div>
 
-    <a href="/admin_login"><button>Admin Login</button></a>
+    <br>
+
+    <div class="button-row">
+        <a href="/admin_register"><button>Admin Register</button></a>
+        <a href="/admin_login"><button>Admin Login</button></a>
+    </div>
 
 </div>
 
 </body>
-
 </html>
