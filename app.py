@@ -21,23 +21,43 @@ def home():
 def student_register():
 
     if request.method == 'POST':
-        name = request.form['name']
+
+        full_name = request.form['full_name']
         email = request.form['email']
         password = request.form['password']
-        department = request.form['department']
-        year = request.form['year']
-        section = request.form['section']
+        college_name = request.form['college_name']
+        branch = request.form['branch']
+        year_level = request.form['year_level']
+        semester = request.form['semester']
+        section_name = request.form['section_name']
+        roll_no = request.form['roll_no']
+        phone = request.form['phone']
 
         cursor = db.cursor()
 
         query = """
         INSERT INTO students
-        (name, email, password, department, year, section)
-        VALUES (%s,%s,%s,%s,%s,%s)
+        (full_name, email, password, college_name,
+         branch, year_level, semester,
+         section_name, roll_no, phone)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
-        cursor.execute(query, (name, email, password, department, year, section))
+        cursor.execute(query, (
+            full_name,
+            email,
+            password,
+            college_name,
+            branch,
+            year_level,
+            semester,
+            section_name,
+            roll_no,
+            phone
+        ))
+
         db.commit()
+        cursor.close()
 
         return "Student Registered Successfully"
 
@@ -90,14 +110,27 @@ def student_logout():
 def admin_register():
 
     if request.method == 'POST':
+
         username = request.form['username']
         password = request.form['password']
+        college_name = request.form['college_name']
 
         cursor = db.cursor()
 
-        query = "INSERT INTO admin (username, password) VALUES (%s,%s)"
-        cursor.execute(query, (username, password))
+        query = """
+        INSERT INTO admin
+        (username, password, college_name)
+        VALUES (%s,%s,%s)
+        """
+
+        cursor.execute(query, (
+            username,
+            password,
+            college_name
+        ))
+
         db.commit()
+        cursor.close()
 
         return "Admin Registered Successfully"
 
@@ -119,46 +152,78 @@ def admin_login():
         admin = cursor.fetchone()
 
         if admin:
-            return "Admin Login Successful"
+            return redirect('/admin_dashboard')
         else:
             return "Invalid Username or Password"
 
     return render_template('admin_login.html')
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@app.route('/manage_periods')
+def manage_periods():
+    return render_template('manage_periods.html')
+
+
+@app.route('/publish_timetable')
+def publish_timetable():
+    return render_template('publish_timetable.html')
+
+
+@app.route('/admin_view_timetable')
+def admin_view_timetable():
+    return render_template('admin_view_timetable.html')
+@app.route('/view_students')
+def view_students():
+    return "Students List"
+
+@app.route('/view_faculty')
+def view_faculty():
+    return "Faculty List"
+
+@app.route('/admin_logout')
+def admin_logout():
+    session.clear()
+    return redirect('/admin_login')
+
+@app.route('/admin_profile')
+def admin_profile():
+    return "Admin Profile"
 
 @app.route('/faculty_register', methods=['GET', 'POST'])
 def faculty_register():
 
     if request.method == 'POST':
 
-        name = request.form['name']
+        employee_id = request.form['employee_id']
+        full_name = request.form['full_name']
         email = request.form['email']
+        password = request.form['password']
         phone = request.form['phone']
-        age = request.form['age']
-        experience = request.form['experience']
+        college_name = request.form['college_name']
         department = request.form['department']
-        subject = request.form['subject']
-        availability = request.form['availability']
+        subject_name = request.form['subject_name']
 
         cursor = db.cursor()
 
         query = """
         INSERT INTO faculty
-        (name, email, phone, age, experience, department, subject_handled, availability)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (employee_id, full_name, email, password,
+         phone, college_name, department, subject_name)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
-        values = (
-            name,
+        cursor.execute(query, (
+            employee_id,
+            full_name,
             email,
+            password,
             phone,
-            age,
-            experience,
+            college_name,
             department,
-            subject,
-            availability
-        )
-
-        cursor.execute(query, values)
+            subject_name
+        ))
 
         db.commit()
         cursor.close()
@@ -192,10 +257,33 @@ def faculty_login():
             return "Phone number not registered"
 
     return render_template('faculty_login.html')
-
 @app.route('/faculty_dashboard')
 def faculty_dashboard():
-    return "Welcome Faculty Dashboard"
+    return render_template('faculty_dashboard.html')
+
+@app.route('/faculty_profile')
+def faculty_profile():
+    return "Faculty Profile"
+
+
+@app.route('/absence_request')
+def absence_request():
+    return render_template('absence_request.html')
+
+
+@app.route('/faculty_experience_form')
+def faculty_experience_form():
+    return render_template('faculty_experience_form.html')
+
+
+@app.route('/faculty_view_timetable')
+def faculty_view_timetable():
+    return render_template('faculty_view_timetable.html')
+@app.route('/faculty_logout')
+def faculty_logout():
+    session.clear()
+    return redirect('/faculty_login')
+
 
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
