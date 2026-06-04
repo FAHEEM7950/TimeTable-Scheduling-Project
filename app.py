@@ -467,10 +467,25 @@ def absence_request():
 def faculty_experience_form():
     return render_template('faculty_experience_form.html')
 
-
 @app.route('/faculty_view_timetable')
 def faculty_view_timetable():
-    return render_template('faculty_view_timetable.html')
+
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT *
+        FROM timetable
+        ORDER BY id
+    """)
+
+    timetable = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template(
+        'faculty_view_timetable.html',
+        timetable=timetable
+    )
 @app.route('/faculty_logout')
 def faculty_logout():
     session.clear()
