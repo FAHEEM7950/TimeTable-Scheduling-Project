@@ -1,29 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>College Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-<h1>College Login</h1>
+    <header>
+        <h1>AI-Sched</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+        </div>
+    </header>
 
-<form method="POST">
+    <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
+        <div class="form-container">
+            <h2 class="form-title">College Admin Login</h2>
+            <p class="form-subtitle">Enter your college administrator credentials</p>
 
-    <input type="email"
-           name="email"
-           placeholder="College Email"
-           required><br><br>
+            {% if error %}
+                <div class="message-box message-error">{{ error }}</div>
+            {% endif %}
 
-    <input type="password"
-           name="password"
-           placeholder="Password"
-           required><br><br>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="email">College Admin Email</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="admin@college.edu" required>
+                </div>
 
-    <button type="submit">
-        Login
-    </button>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
 
-</form>
+                <button type="submit" class="btn" style="margin-top: 1rem;">Log In</button>
+            </form>
+        </div>
+    </main>
 
 </body>
 </html>

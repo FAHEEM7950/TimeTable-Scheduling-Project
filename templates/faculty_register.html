@@ -1,23 +1,73 @@
-<h1>Faculty Registration</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Registration - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+</head>
+<body>
 
-   <form method="POST">
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+        </div>
+    </header>
 
-    <input type="text" name="employee_id" placeholder="Employee ID" required><br><br>
+    <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
+        <div class="form-container" style="max-width: 600px; padding: 2.5rem;">
+            <h2 class="form-title">Faculty Registration</h2>
+            <p class="form-subtitle">Create a teacher account for {{ college.college_name }}</p>
 
-    <input type="text" name="full_name" placeholder="Faculty Name" required><br><br>
+            {% if error %}
+                <div class="message-box message-error">{{ error }}</div>
+            {% endif %}
 
-    <input type="email" name="email" placeholder="Email" required><br><br>
+            <form method="POST">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
 
-    <input type="password" name="password" placeholder="Password" required><br><br>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="employee_id">Employee ID</label>
+                        <input type="text" id="employee_id" name="employee_id" class="form-control" placeholder="e.g. FAC101" required>
+                    </div>
 
-    <input type="text" name="phone" placeholder="Phone Number"><br><br>
+                    <div class="form-group">
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control" placeholder="Prof. Jane Smith" required>
+                    </div>
 
-    <input type="text" name="college_name" placeholder="College Name" required><br><br>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="jane.smith@college.edu" required>
+                    </div>
 
-    <input type="text" name="department" placeholder="Department" required><br><br>
+                    <div class="form-group">
+                        <label for="phone">Phone Number (For OTP Login)</label>
+                        <input type="text" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+                    </div>
 
-    <input type="text" name="subject_name" placeholder="Subject Name"><br><br>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
 
-    <button type="submit">Register</button>
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <input type="text" id="department" name="department" class="form-control" placeholder="e.g. CSE" required>
+                    </div>
 
-</form>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="subject_name">Subject Specialization / Teach Choice</label>
+                        <input type="text" id="subject_name" name="subject_name" class="form-control" placeholder="e.g. Operating Systems" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" style="margin-top: 1.5rem;">Register Faculty</button>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

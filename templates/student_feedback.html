@@ -1,40 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Student Feedback</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Feedback - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-<h1>Student Feedback Form</h1>
+    <header>
+        <h1>{{ college.college_name }} Student</h1>
+        <div class="nav-links">
+            <a href="/student_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+        </div>
+    </header>
 
-<form method="POST">
+    <div class="dashboard-wrapper">
+        <div class="sidebar">
+            <h3 class="sidebar-title">Student Panel</h3>
+            <ul class="sidebar-menu">
+                <li><a href="/student_dashboard" class="sidebar-link">Overview</a></li>
+                <li><a href="/student_profile" class="sidebar-link">My Profile</a></li>
+                <li><a href="/view_timetable" class="sidebar-link">My Timetable</a></li>
+                <li><a href="/stress_form" class="sidebar-link">Fill Stress Form</a></li>
+                <li><a href="/student_feedback" class="sidebar-link active">Submit Feedback</a></li>
+            </ul>
+        </div>
 
-    Student ID:
-    <input type="number"
-           name="student_id"
-           required><br><br>
+        <main class="main-content" style="max-width: 700px; margin: auto;">
+            <h2 class="page-title">Submit Timetable Feedback</h2>
 
-    Roll Number:
-    <input type="text"
-           name="roll_no"
-           required><br><br>
+            {% if success %}
+                <div class="message-box message-success">{{ success }}</div>
+            {% endif %}
 
-    Feedback:
-    <br>
-    <textarea
-        name="message"
-        rows="5"
-        cols="40"
-        required>
-    </textarea>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2.5rem; margin-bottom: 2rem;">
+                <form method="POST">
+                    
+                    <div class="form-group">
+                        <label for="roll_no">Confirm Roll Number</label>
+                        <input type="text" id="roll_no" name="roll_no" class="form-control" value="{{ student.roll_no }}" readonly>
+                    </div>
 
-    <br><br>
+                    <div class="form-group">
+                        <label for="message">Your Message / Feedback</label>
+                        <textarea id="message" name="message" class="form-control" rows="5" placeholder="Share your suggestions, schedule complaints, or swap requests..." required></textarea>
+                    </div>
 
-    <button type="submit">
-        Submit Feedback
-    </button>
+                    <button type="submit" class="btn" style="margin-top: 1rem;">Submit Feedback</button>
+                </form>
+            </div>
 
-</form>
+        </main>
+    </div>
 
 </body>
 </html>

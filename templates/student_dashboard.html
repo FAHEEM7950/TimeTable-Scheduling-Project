@@ -1,18 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Student Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-<h1>Welcome Student</h1>
-<hr>
+    <header>
+        <h1>{{ college.college_name }} Student</h1>
+        <div class="nav-links">
+            <a href="/student_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+        </div>
+    </header>
 
-<p><a href="/student_profile">View Profile</a></p>
-<p><a href="/stress_form">Fill Stress Form</a></p>
-<p><a href="/view_timetable">View Timetable</a></p>
-<p><a href="/student_feedback">Feedback</a></p>
-<p><a href="/student_logout">Logout</a></p>
+    <div class="dashboard-wrapper">
+        <div class="sidebar">
+            <h3 class="sidebar-title">Student Panel</h3>
+            <ul class="sidebar-menu">
+                <li><a href="/student_dashboard" class="sidebar-link active">Overview</a></li>
+                <li><a href="/student_profile" class="sidebar-link">My Profile</a></li>
+                <li><a href="/view_timetable" class="sidebar-link">My Timetable</a></li>
+                <li><a href="/stress_form" class="sidebar-link">Fill Stress Form</a></li>
+                <li><a href="/student_feedback" class="sidebar-link">Submit Feedback</a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <h2 class="page-title">Welcome, {{ student.full_name }}</h2>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="color: var(--accent); margin-bottom: 0.75rem;">Timetable Status</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    You are registered under <strong>{{ student.branch }}</strong> (Year {{ student.year_level }}, Semester {{ student.semester }}, Section {{ student.section_name }}). Check your published weekly timetable in the calendar view.
+                </p>
+                <a href="/view_timetable" class="btn" style="width: auto;">View My Timetable</a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2);">
+                    <h4>Your Branch</h4>
+                    <div class="value" style="font-size: 1.5rem; margin-top: 0.5rem; color: var(--accent);">{{ student.branch }}</div>
+                </div>
+                <div class="stat-card" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2);">
+                    <h4>Study Year / Semester</h4>
+                    <div class="value" style="font-size: 1.5rem; margin-top: 0.5rem; color: #a855f7;">Year {{ student.year_level }} / Sem {{ student.semester }}</div>
+                </div>
+                <div class="stat-card" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+                    <h4>Stress Profile Status</h4>
+                    <div class="value" style="font-size: 1.2rem; margin-top: 0.5rem; color: var(--success);">
+                        {% if stress_completed %}
+                            Completed ✓
+                        {% else %}
+                            Pending ⚠
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
 
 </body>
 </html>

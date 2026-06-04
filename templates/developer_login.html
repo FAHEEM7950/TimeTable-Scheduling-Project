@@ -3,33 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Login - {{ college.college_name }}</title>
+    <title>Developer Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
     <header>
-        <h1>{{ college.college_name }} Portal</h1>
+        <h1>AI-Sched</h1>
         <div class="nav-links">
-            <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+            <a href="/">Home</a>
         </div>
     </header>
 
     <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
         <div class="form-container">
-            <h2 class="form-title">Student Login</h2>
-            <p class="form-subtitle">Enter your student account credentials for {{ college.college_name }}</p>
+            <h2 class="form-title">Developer Portal</h2>
+            <p class="form-subtitle">Enter your system developer credentials to access the global dashboard</p>
 
             {% if error %}
                 <div class="message-box message-error">{{ error }}</div>
             {% endif %}
 
             <form method="POST">
-                <input type="hidden" name="college_id" value="{{ college.id }}">
-
                 <div class="form-group">
-                    <label for="email">Student Email</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="student@college.edu" required>
+                    <label for="username">Developer Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="developer" required>
                 </div>
 
                 <div class="form-group">

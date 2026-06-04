@@ -1,34 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Student Register</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-<h1>Student Registration</h1>
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+        </div>
+    </header>
 
-<form method="POST">
+    <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
+        <div class="form-container" style="max-width: 600px; padding: 2.5rem;">
+            <h2 class="form-title">Student Registration</h2>
+            <p class="form-subtitle">Register to view timetables and fill preferences for {{ college.college_name }}</p>
 
-    <input type="text" name="full_name" placeholder="Full Name" required><br><br>
+            {% if error %}
+                <div class="message-box message-error">{{ error }}</div>
+            {% endif %}
 
-    <input type="email" name="email" placeholder="Email" required><br><br>
+            <form method="POST">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
 
-    <input type="password" name="password" placeholder="Password" required><br><br>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control" placeholder="John Doe" required>
+                    </div>
 
-    <input type="text" name="college_name" placeholder="College Name" required><br><br>
+                    <div class="form-group">
+                        <label for="email">Student Email</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="john.doe@college.edu" required>
+                    </div>
 
-    <input type="text" name="branch" placeholder="Branch" required><br><br>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
 
-    <input type="text" name="year_level" placeholder="Year" required><br><br>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone" class="form-control" placeholder="1234567890">
+                    </div>
 
-    <input type="text" name="semester" placeholder="Semester" required><br><br>
+                    <div class="form-group">
+                        <label for="branch">Branch / Dept</label>
+                        <input type="text" id="branch" name="branch" class="form-control" placeholder="e.g. CSE" required>
+                    </div>
 
-    <input type="text" name="section_name" placeholder="Section" required><br><br>
+                    <div class="form-group">
+                        <label for="year_level">Year Level</label>
+                        <select id="year_level" name="year_level" class="form-control" required>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
 
-    <input type="text" name="roll_no" placeholder="Roll Number"><br><br>
+                    <div class="form-group">
+                        <label for="semester">Semester</label>
+                        <select id="semester" name="semester" class="form-control" required>
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                        </select>
+                    </div>
 
-    <input type="text" name="phone" placeholder="Phone Number"><br><br>
+                    <div class="form-group">
+                        <label for="section_name">Section</label>
+                        <input type="text" id="section_name" name="section_name" class="form-control" placeholder="e.g. A" required>
+                    </div>
 
-    <button type="submit">Register</button>
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="roll_no">Roll Number</label>
+                        <input type="text" id="roll_no" name="roll_no" class="form-control" placeholder="e.g. 21CS001" required>
+                    </div>
+                </div>
 
-</form>
+                <button type="submit" class="btn" style="margin-top: 1.5rem;">Register Student</button>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

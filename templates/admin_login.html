@@ -1,21 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Admin Login - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-<h1>Admin Login</h1>
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+        </div>
+    </header>
 
-<form method="POST">
+    <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
+        <div class="form-container">
+            <h2 class="form-title">Local Admin Login</h2>
+            <p class="form-subtitle">Enter local admin credentials for {{ college.college_name }}</p>
 
-    <input type="text" name="username" placeholder="Enter Username" required><br><br>
+            {% if error %}
+                <div class="message-box message-error">{{ error }}</div>
+            {% endif %}
 
-    <input type="password" name="password" placeholder="Enter Password" required><br><br>
+            <form method="POST">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
 
-    <button type="submit">Login</button>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="Admin username" required>
+                </div>
 
-</form>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn" style="margin-top: 1rem;">Log In</button>
+            </form>
+        </div>
+    </main>
 
 </body>
 </html>

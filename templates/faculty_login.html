@@ -1,9 +1,41 @@
-<h1>Faculty Login</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Login - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+</head>
+<body>
 
-<form method="POST">
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+        </div>
+    </header>
 
-<input type="text" name="phone" placeholder="Phone Number" required><br><br>
+    <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
+        <div class="form-container">
+            <h2 class="form-title">Faculty Secure Login</h2>
+            <p class="form-subtitle">Enter your registered phone number. A simulated 4-digit OTP will be printed on the server console.</p>
 
-<button type="submit">Send OTP</button>
+            {% if error %}
+                <div class="message-box message-error">{{ error }}</div>
+            {% endif %}
 
-</form>
+            <form method="POST">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="text" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
+                </div>
+
+                <button type="submit" class="btn" style="margin-top: 1rem;">Send OTP Code</button>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>

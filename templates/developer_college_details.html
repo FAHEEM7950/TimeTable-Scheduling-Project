@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer - Inspect {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+    <style>
+        .section-header {
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Developer Admin</h1>
+        <div class="nav-links">
+            <a href="/developer_dashboard" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
+        </div>
+    </header>
+
+    <div class="dashboard-wrapper">
+        <main class="main-content" style="padding: 2.5rem 5rem; max-width: 1400px; margin: auto;">
+            <h2 class="page-title">Inspecting: {{ college.college_name }} ({{ college.college_code }})</h2>
+
+            <!-- Filter Controls -->
+            <form method="GET" class="filter-bar">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="branch">Branch/Dept:</label>
+                    <select id="branch" name="branch">
+                        <option value="">-- All Branches --</option>
+                        {% for b in branches %}
+                            <option value="{{ b }}" {% if b == selected_branch %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="year_level">Year:</label>
+                    <select id="year_level" name="year_level">
+                        <option value="">-- All Years --</option>
+                        <option value="1" {% if selected_year == '1' %}selected{% endif %}>1st Year</option>
+                        <option value="2" {% if selected_year == '2' %}selected{% endif %}>2nd Year</option>
+                        <option value="3" {% if selected_year == '3' %}selected{% endif %}>3rd Year</option>
+                        <option value="4" {% if selected_year == '4' %}selected{% endif %}>4th Year</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="semester">Semester:</label>
+                    <select id="semester" name="semester">
+                        <option value="">-- All Semesters --</option>
+                        <option value="1" {% if selected_semester == '1' %}selected{% endif %}>Semester 1</option>
+                        <option value="2" {% if selected_semester == '2' %}selected{% endif %}>Semester 2</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" style="width: auto; padding: 0.5rem 1.5rem;">Apply Filters</button>
+                <a href="/developer_college_details/{{ college.id }}" class="btn btn-secondary" style="width: auto; padding: 0.5rem 1.5rem; text-decoration: none;">Clear</a>
+            </form>
+
+            <!-- 1. Admins -->
+            <h3 class="section-header">College Admins</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if admins %}
+                            {% for admin in admins %}
+                                <tr>
+                                    <td>{{ admin.id }}</td>
+                                    <td><strong>{{ admin.username }}</strong></td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2" style="text-align: center; color: var(--text-secondary);">No admins found for this college.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2. Faculty -->
+            <h3 class="section-header">Faculty Details</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Department</th>
+                            <th>Subject Specialization</th>
+                            <th>Experience</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if faculty_list %}
+                            {% for fac in faculty_list %}
+                                <tr>
+                                    <td><code>{{ fac.employee_id }}</code></td>
+                                    <td><strong>{{ fac.full_name }}</strong></td>
+                                    <td>{{ fac.email }}</td>
+                                    <td>{{ fac.phone }}</td>
+                                    <td><span style="background: rgba(168, 85, 247, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ fac.department }}</span></td>
+                                    <td>{{ fac.subject_name }}</td>
+                                    <td>{{ fac.experience_years }} Years</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">No faculty matching filters.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 3. Students -->
+            <h3 class="section-header">Students Details</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Branch</th>
+                            <th>Year</th>
+                            <th>Semester</th>
+                            <th>Section</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if students %}
+                            {% for stud in students %}
+                                <tr>
+                                    <td><code>{{ stud.roll_no }}</code></td>
+                                    <td><strong>{{ stud.full_name }}</strong></td>
+                                    <td>{{ stud.email }}</td>
+                                    <td>{{ stud.phone }}</td>
+                                    <td><span style="background: rgba(59, 130, 246, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ stud.branch }}</span></td>
+                                    <td>Year {{ stud.year_level }}</td>
+                                    <td>Sem {{ stud.semester }}</td>
+                                    <td>Section {{ stud.section_name }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">No students matching filters.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Gateway - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+        </div>
+    </header>
+
+    <main class="index-container">
+        <h2 class="hero-title" style="font-size: 2.4rem;">Select Your Role Portal</h2>
+        <p class="hero-subtitle">Access your schedule, manage subjects, submit leaves or stress metrics in your institution space.</p>
+
+        <div class="portal-grid" style="max-width: 1100px;">
+            <!-- Student Card -->
+            <div class="portal-card">
+                <h3>Student Portal</h3>
+                <p>Register as a student, log in, fill stress profiles, and view your semester timetable.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/student_register?college_id={{ college.id }}" class="btn btn-secondary" style="flex: 1;">Register</a>
+                    <a href="/student_login?college_id={{ college.id }}" class="btn" style="flex: 1;">Login</a>
+                </div>
+            </div>
+
+            <!-- Faculty Card -->
+            <div class="portal-card">
+                <h3>Faculty Portal</h3>
+                <p>Register as a teacher, log in (OTP secure), manage availability, and view personal teaching schedules.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/faculty_register?college_id={{ college.id }}" class="btn btn-secondary" style="flex: 1;">Register</a>
+                    <a href="/faculty_login?college_id={{ college.id }}" class="btn" style="flex: 1;">Login</a>
+                </div>
+            </div>
+
+            <!-- Local Admin Card -->
+            <div class="portal-card">
+                <h3>College Admin Portal</h3>
+                <p>Manage local departments, register admins, edit periods/subjects, and generate/publish timetables.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/admin_register?college_id={{ college.id }}" class="btn btn-secondary" style="flex: 1;">Register</a>
+                    <a href="/admin_login?college_id={{ college.id }}" class="btn" style="flex: 1;">Login</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

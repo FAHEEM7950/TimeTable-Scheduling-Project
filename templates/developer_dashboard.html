@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Developer Admin</h1>
+        <div class="nav-links">
+            <a href="/developer_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+        </div>
+    </header>
+
+    <div class="dashboard-wrapper">
+        <div class="sidebar">
+            <h3 class="sidebar-title">Global Control</h3>
+            <ul class="sidebar-menu">
+                <li><a href="/developer_dashboard" class="sidebar-link active">Colleges Overview</a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <h2 class="page-title">Registered Colleges Overview</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Colleges</h4>
+                    <div class="value">{{ colleges|length }}</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>College Name</th>
+                            <th>College Code</th>
+                            <th>Admin Email</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if colleges %}
+                            {% for college in colleges %}
+                                <tr>
+                                    <td>{{ college.id }}</td>
+                                    <td><strong>{{ college.college_name }}</strong></td>
+                                    <td><code>{{ college.college_code }}</code></td>
+                                    <td>{{ college.email }}</td>
+                                    <td>
+                                        <a href="/developer_college_details/{{ college.id }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto;">Inspect College</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-secondary);">No colleges registered yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

@@ -1,23 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+    <style>
+        .share-box {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px dashed var(--accent);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .share-box code {
+            font-size: 0.95rem;
+            color: var(--accent);
+        }
+    </style>
 </head>
 <body>
 
-<h1>Admin Dashboard</h1>
+    <header>
+        <h1>{{ college.college_name }} Admin</h1>
+        <div class="nav-links">
+            <a href="/admin_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+        </div>
+    </header>
 
-<a href="/admin_view_timetable">View Timetable</a><br><br>
+    <div class="dashboard-wrapper">
+        <div class="sidebar">
+            <h3 class="sidebar-title">Navigation</h3>
+            <ul class="sidebar-menu">
+                <li><a href="/admin_dashboard" class="sidebar-link active">Overview</a></li>
+                <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
+                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
+                <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
+                <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+            </ul>
+        </div>
 
-<a href="/manage_periods">Manage Periods & Timing</a><br><br>
+        <main class="main-content">
+            <h2 class="page-title">Local College Administrator Dashboard</h2>
 
-<a href="/publish_timetable">Publish Timetable</a><br><br>
+            <!-- Portal URL Share Box -->
+            <div class="share-box">
+                <div>
+                    <strong>Portal Share Link:</strong> Share this link with your students and faculty to let them register/login:
+                    <br>
+                    <code>{{ request.host_url }}college_portal/{{ college.id }}</code>
+                </div>
+                <button onclick="navigator.clipboard.writeText('{{ request.host_url }}college_portal/{{ college.id }}'); alert('Link copied to clipboard!')" class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Copy Link</button>
+            </div>
 
-<a href="/view_students">View Students</a><br><br>
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Faculty</h4>
+                    <div class="value">{{ stats.faculty_count }}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Students</h4>
+                    <div class="value">{{ stats.student_count }}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Subjects</h4>
+                    <div class="value">{{ stats.subject_count }}</div>
+                </div>
+            </div>
 
-<a href="/view_faculty">View Faculty</a><br><br>
+            <!-- Recent Notifications / AI Status -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1rem; color: var(--accent);">AI Scheduler Status</h3>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                    Configure subjects for each year, semester, and branch under <strong>Manage Subjects</strong>, then generate the initial weekly schedule under <strong>Manage Periods & Generate</strong>.
+                </p>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="/manage_periods" class="btn" style="width: auto;">Open Timetable Builder</a>
+                    <a href="/manage_subjects" class="btn btn-secondary" style="width: auto;">Add/Edit Subjects</a>
+                </div>
+            </div>
 
-<p><a href="/admin_logout">Logout</a></p>
+            <!-- Local Registered Admins List -->
+            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Admins</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admin ID</th>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if admins %}
+                            {% for adm in admins %}
+                                <tr>
+                                    <td>{{ adm.id }}</td>
+                                    <td><strong>{{ adm.username }}</strong></td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2" style="text-align: center; color: var(--text-secondary);">No local admins registered yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
 
 </body>
 </html>

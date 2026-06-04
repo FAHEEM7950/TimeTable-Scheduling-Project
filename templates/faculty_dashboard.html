@@ -1,33 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Faculty Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
 
-    <h1>Faculty Dashboard</h1>
+    <header>
+        <h1>{{ college.college_name }} Faculty</h1>
+        <div class="nav-links">
+            <a href="/faculty_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+        </div>
+    </header>
 
-    <h3>Faculty Services</h3>
+    <div class="dashboard-wrapper">
+        <div class="sidebar">
+            <h3 class="sidebar-title">Faculty Panel</h3>
+            <ul class="sidebar-menu">
+                <li><a href="/faculty_dashboard" class="sidebar-link active">Overview</a></li>
+                <li><a href="/faculty_view_timetable" class="sidebar-link">My Timetable</a></li>
+                <li><a href="/absence_request" class="sidebar-link">Request Absence</a></li>
+                <li><a href="/faculty_experience_form" class="sidebar-link">Experience & Choices</a></li>
+            </ul>
+        </div>
 
-    <p>
-        <a href="/faculty_view_timetable">View Timetable</a>
-    </p>
+        <main class="main-content">
+            <h2 class="page-title">Welcome, {{ faculty.full_name }}</h2>
 
-    <p>
-        <a href="/absence_request">Submit Absence Request</a>
-    </p>
+            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="color: var(--accent); margin-bottom: 0.75rem;">Your Timetable</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                    View your weekly class schedule across departments.
+                </p>
+                <a href="/faculty_view_timetable" class="btn" style="width: auto;">View My Timetable</a>
+            </div>
 
-    <p>
-        <a href="/faculty_experience_form">Faculty Experience Form</a>
-    </p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Department</h4>
+                    <div class="value" style="font-size: 1.4rem; color: var(--accent); margin-top: 0.5rem;">{{ faculty.department }}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Specialization</h4>
+                    <div class="value" style="font-size: 1.4rem; color: #a855f7; margin-top: 0.5rem;">{{ faculty.subject_name }}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Experience</h4>
+                    <div class="value" style="font-size: 1.4rem; color: var(--success); margin-top: 0.5rem;">{{ faculty.experience_years }} Years</div>
+                </div>
+            </div>
 
-    <p>
-        <a href="/faculty_profile">View Profile</a>
-    </p>
-
-    <p>
-        <a href="/faculty_logout">Logout</a>
-    </p>
+        </main>
+    </div>
 
 </body>
 </html>
