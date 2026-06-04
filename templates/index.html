@@ -36,6 +36,21 @@
                     <a href="/college_login" class="btn" style="flex: 1;">College Login</a>
                 </div>
             </div>
+
+            <!-- Select Your College Portal -->
+            <div class="portal-card" style="grid-column: span 2;">
+                <h3>Access College Portals (Student / Faculty / Admin)</h3>
+                <p>Select your registered college to register or login as a Student, Faculty member, or Local Admin.</p>
+                <form onsubmit="event.preventDefault(); const cid = document.getElementById('college_select').value; if(cid) { window.location.href='/college_portal/' + cid; } else { alert('Please select a college'); }" style="display: flex; gap: 1rem; width: 100%; max-width: 600px; margin: auto; justify-content: center; align-items: center; flex-wrap: wrap;">
+                    <select id="college_select" class="form-control" style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px; flex-grow: 1; min-width: 250px;" required>
+                        <option value="">-- Choose Your College --</option>
+                        {% for col in colleges %}
+                            <option value="{{ col.id }}">{{ col.college_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn" style="width: auto; padding: 0.75rem 2rem;">Enter Portal</button>
+                </form>
+            </div>
         </div>
     </main>
 

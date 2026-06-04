@@ -24,7 +24,13 @@ def inject_context():
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, college_name FROM colleges ORDER BY college_name")
+    colleges = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return render_template('index.html', colleges=colleges)
 
 @app.route('/college_portal/<int:college_id>')
 def college_portal(college_id):
