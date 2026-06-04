@@ -199,6 +199,7 @@ def stress_form():
         most_stress_subject = request.form['most_stress_subject']
         easiest_subject = request.form['easiest_subject']
         preferred_morning_subject = request.form['preferred_morning_subject']
+        preferred_afternoon_subject = request.form['preferred_afternoon_subject']
         best_study_time = request.form['best_study_time']
         need_more_breaks = request.form['need_more_breaks']
         scheduling_suggestions = request.form['scheduling_suggestions']
@@ -221,13 +222,14 @@ def stress_form():
             most_stress_subject,
             easiest_subject,
             preferred_morning_subject,
+            preferred_afternoon_subject,
             best_study_time,
             need_more_breaks,
             scheduling_suggestions,
             stress_comments
         )
         VALUES
-        (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
 
         cursor.execute(query, (
@@ -243,6 +245,7 @@ def stress_form():
             most_stress_subject,
             easiest_subject,
             preferred_morning_subject,
+            preferred_afternoon_subject,
             best_study_time,
             need_more_breaks,
             scheduling_suggestions,
