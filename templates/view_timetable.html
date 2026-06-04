@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Timetable</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            background:#f4f6f9;
+            padding:20px;
+        }
+
+        .container{
+            max-width:1200px;
+            margin:auto;
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0px 0px 10px lightgray;
+        }
+
+        h1{
+            text-align:center;
+            color:#004aad;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:20px;
+        }
+
+        th{
+            background:#004aad;
+            color:white;
+            padding:12px;
+            border:1px solid #ddd;
+        }
+
+        td{
+            text-align:center;
+            padding:15px;
+            border:1px solid #ddd;
+        }
+
+        tr:nth-child(even){
+            background:#f8f9fa;
+        }
+
+        .break{
+            background:#ffe599;
+            font-weight:bold;
+        }
+
+        button{
+            margin-top:20px;
+            padding:10px 20px;
+            background:#004aad;
+            color:white;
+            border:none;
+            border-radius:5px;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#003380;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>My Weekly Timetable</h1>
+
+    <table>
+
+        <tr>
+            <th>Day</th>
+            <th>P1</th>
+            <th>P2</th>
+            <th>P3</th>
+            <th>Break</th>
+            <th>P4</th>
+            <th>P5</th>
+            <th>P6</th>
+            <th>P7</th>
+        </tr>
+
+        {% for row in timetable %}
+
+        <tr>
+
+            <td><b>{{ row.day_name }}</b></td>
+
+            <td>{{ row.period1 }}</td>
+            <td>{{ row.period2 }}</td>
+            <td>{{ row.period3 }}</td>
+
+            <td class="break">BREAK</td>
+
+            <td>{{ row.period4 }}</td>
+            <td>{{ row.period5 }}</td>
+            <td>{{ row.period6 }}</td>
+            <td>{{ row.period7 }}</td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <center>
+        <button onclick="window.print()">
+            Print Timetable
+        </button>
+    </center>
+
+</div>
+
+</body>
+</html>

@@ -258,14 +258,48 @@ def stress_form():
         return "Stress Form Submitted Successfully"
 
     return render_template('stress_form.html')
-
 @app.route('/view_timetable')
 def view_timetable():
-    return "Student Timetable"
 
-@app.route('/student_feedback')
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM timetable")
+
+    timetable = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template(
+        'view_timetable.html',
+        timetable=timetable
+    )
+@app.route('/student_feedback', methods=['GET','POST'])
 def student_feedback():
-    return "Feedback Page"
+
+    if request.method == 'POST':
+
+        student_id = request.form['student_id']
+        roll_no = request.form['roll_no']
+        message = request.form['message']
+
+        cursor = db.cursor()
+
+        cursor.execute("""
+        INSERT INTO feedback
+        (student_id, roll_no, message)
+        VALUES (%s,%s,%s)
+        """, (
+            student_id,
+            roll_no,
+            message
+        ))
+
+        db.commit()
+        cursor.close()
+
+        return "Feedback Submitted Successfully"
+
+    return render_template('student_feedback.html')
 
 @app.route('/student_logout')
 def student_logout():
