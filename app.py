@@ -149,7 +149,9 @@ def student_login():
         user = cursor.fetchone()
 
         if user:
-            return redirect('/student_dashboard')
+             session['student_email'] = email
+             return redirect('/student_dashboard')
+         
         else:
             return "Invalid Email or Password"
 
@@ -158,14 +160,101 @@ def student_login():
 @app.route('/student_dashboard')
 def student_dashboard():
     return render_template('student_dashboard.html')
-
 @app.route('/student_profile')
 def student_profile():
-    return "Student Profile"
 
-@app.route('/stress_form')
+    email = session.get('student_email')
+
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute(
+        "SELECT * FROM students WHERE email=%s",
+        (email,)
+    )
+
+    student = cursor.fetchone()
+
+    cursor.close()
+
+    return render_template(
+        'student_profile.html',
+        student=student
+    )
+
+
+@app.route('/stress_form', methods=['GET', 'POST'])
 def stress_form():
-    return "Stress Form"
+
+    if request.method == 'POST':
+
+        student_id = request.form['student_id']
+        sleep_hours = request.form['sleep_hours']
+        feel_fresh = request.form['feel_fresh']
+        physically_tired = request.form['physically_tired']
+        headache_fatigue = request.form['headache_fatigue']
+        health_rating = request.form['health_rating']
+        regular_day_stress = request.form['regular_day_stress']
+        exam_stress = request.form['exam_stress']
+        daily_study_hours = request.form['daily_study_hours']
+        most_stress_subject = request.form['most_stress_subject']
+        easiest_subject = request.form['easiest_subject']
+        preferred_morning_subject = request.form['preferred_morning_subject']
+        best_study_time = request.form['best_study_time']
+        need_more_breaks = request.form['need_more_breaks']
+        scheduling_suggestions = request.form['scheduling_suggestions']
+        stress_comments = request.form['stress_comments']
+
+        cursor = db.cursor()
+
+        query = """
+        INSERT INTO stress_forms
+        (
+            student_id,
+            sleep_hours,
+            feel_fresh,
+            physically_tired,
+            headache_fatigue,
+            health_rating,
+            regular_day_stress,
+            exam_stress,
+            daily_study_hours,
+            most_stress_subject,
+            easiest_subject,
+            preferred_morning_subject,
+            best_study_time,
+            need_more_breaks,
+            scheduling_suggestions,
+            stress_comments
+        )
+        VALUES
+        (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        cursor.execute(query, (
+            student_id,
+            sleep_hours,
+            feel_fresh,
+            physically_tired,
+            headache_fatigue,
+            health_rating,
+            regular_day_stress,
+            exam_stress,
+            daily_study_hours,
+            most_stress_subject,
+            easiest_subject,
+            preferred_morning_subject,
+            best_study_time,
+            need_more_breaks,
+            scheduling_suggestions,
+            stress_comments
+        ))
+
+        db.commit()
+        cursor.close()
+
+        return "Stress Form Submitted Successfully"
+
+    return render_template('stress_form.html')
 
 @app.route('/view_timetable')
 def view_timetable():
