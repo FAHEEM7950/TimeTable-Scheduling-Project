@@ -117,20 +117,42 @@
     <a href="{{ url_for('stress_dashboard') }}">
     <button>Stress Analytics Dashboard</button>
 </a>
-<div class="dashboard-card">
-    <h3>Stress Analytics Dashboard</h3>
-    <p>View High, Medium and Low stress statistics.</p>
-    <a href="/stress_dashboard">
-        <button>Open Dashboard</button>
+<div class="card">
+
+    <h3 style="color:#3b82f6;">
+        Stress Analytics Dashboard
+    </h3>
+
+    <p>
+        View High, Medium and Low stress statistics based on student stress forms.
+    </p>
+
+    <a href="{{ url_for('stress_dashboard') }}">
+        <button class="primary-btn">
+            Open Dashboard
+        </button>
     </a>
+
 </div>
 
-<div class="dashboard-card">
-    <h3>AI Timetable Optimization</h3>
-    <p>AI places difficult subjects in suitable slots based on stress analysis.</p>
-    <a href="/manage_periods">
-        <button>Generate AI Timetable</button>
+<br>
+
+<div class="card">
+
+    <h3 style="color:#3b82f6;">
+        AI Timetable Optimization
+    </h3>
+
+    <p>
+        AI places difficult subjects in suitable timetable slots based on stress analysis.
+    </p>
+
+    <a href="{{ url_for('manage_periods') }}">
+        <button class="primary-btn">
+            Generate AI Timetable
+        </button>
     </a>
+
 </div>
 
 </body>
