@@ -1093,58 +1093,105 @@ def generate_timetable():
     sorted_subs = sorted(subjects, key=lambda x: stress_stats.get(x['subject_name'].lower(), 0), reverse=True)
 
     for sub in sorted_subs:
-        periods_to_fill = slots_needed[sub['id']]
-        fac_list = subject_faculty_map.get(sub['id'], [])
-        if not fac_list:
-            # Fallback: assign subject without faculty if none registered
-            assigned_fac = "TBD"
+
+     periods_to_fill = slots_needed[sub['id']]
+    fac_list = subject_faculty_map.get(sub['id'], [])
+
+    if not fac_list:
+        assigned_fac = "TBD"
+    else:
+        assigned_fac = fac_list[0]['full_name']
+
+    # Stress count for this subject
+    stress_count = stress_stats.get(
+        sub['subject_name'].lower(),
+        0
+    )
+
+    scheduled_count = 0
+
+    # First pass: spread subject across different days
+    for day in days:
+
+        if scheduled_count >= periods_to_fill:
+            break
+
+        if stress_count >= 5:
+            # High stress subject -> morning preference
+            periods_pool = [
+                'period1',
+                'period2',
+                'period3',
+                'period4',
+                'period5',
+                'period6',
+                'period7'
+            ]
         else:
-            assigned_fac = fac_list[0]['full_name']
+            # Low stress subject -> afternoon preference
+            periods_pool = [
+                'period4',
+                'period5',
+                'period6',
+                'period7',
+                'period1',
+                'period2',
+                'period3'
+            ]
 
-        # Determine if subject is highly stressful (exists in stress list)
-        is_stressful = stress_stats.get(sub['subject_name'].lower(), 0) > 0
+        for period in periods_pool:
 
-        # Try to schedule the periods
-        scheduled_count = 0
-        
-        # We attempt to space out: place at most 1 session of this subject per day
+            if schedule[day][period] == 'FREE':
+
+                if assigned_fac != "TBD" and is_faculty_busy(
+                    assigned_fac,
+                    day,
+                    period
+                ):
+                    continue
+
+                schedule[day][period] = (
+                    f"{sub['subject_name']} ({assigned_fac})"
+                )
+
+                scheduled_count += 1
+                break
+
+    # Second pass: fill remaining periods if needed
+    if scheduled_count < periods_to_fill:
+
         for day in days:
+
             if scheduled_count >= periods_to_fill:
                 break
-            
-            # Determine preferred periods based on stress level
-            # Stressful subjects prefer periods 1, 2, 3 (morning)
-            if is_stressful:
-                periods_pool = ['period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7']
-            else:
-                # Easiest subjects/labs prefer afternoon periods (4, 5, 6, 7)
-                periods_pool = ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
 
-            for period in periods_pool:
-                # Check if slot is FREE
+            for period in [
+                'period1',
+                'period2',
+                'period3',
+                'period4',
+                'period5',
+                'period6',
+                'period7'
+            ]:
+
                 if schedule[day][period] == 'FREE':
-                    # Check if the faculty is busy teaching in another department at this day/period
-                    if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
-                        continue # Skip to avoid clash
-                    
-                    schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
-                    scheduled_count += 1
-                    break # Go to next day
 
-        # If we couldn't space it out completely (e.g. required 5 periods but couldn't fit due to clashes), 
-        # allow scheduling more than 1 per day as fallback
-        if scheduled_count < periods_to_fill:
-            for day in days:
-                if scheduled_count >= periods_to_fill:
-                    break
-                for period in ['period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7']:
-                    if schedule[day][period] == 'FREE':
-                        if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
-                            continue
-                        schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
-                        scheduled_count += 1
-                        if scheduled_count >= periods_to_fill:
-                            break
+                    if assigned_fac != "TBD" and is_faculty_busy(
+                        assigned_fac,
+                        day,
+                        period
+                    ):
+                        continue
+
+                    schedule[day][period] = (
+                        f"{sub['subject_name']} ({assigned_fac})"
+                    )
+
+                    scheduled_count += 1
+
+                    if scheduled_count >= periods_to_fill:
+                        break
 
     # Save to database (timetable table)
     save_conn = get_db_connection()
@@ -1340,7 +1387,152 @@ def absence_request():
     error = locals().get('error_msg')
 
     return render_template('absence_request.html', college=college, faculty=faculty, requests=requests, success=success, error=error)
+def calculate_stress_score(form):
+    score = 0
 
+    # Sleep Hours
+    sleep_hours = int(form['sleep_hours'])
+    if sleep_hours < 5:
+        score += 20
+    elif sleep_hours < 7:
+        score += 10
+
+    # Health Rating (1-10)
+    score += (10 - int(form['health_rating'])) * 2
+
+    # Regular Stress
+    score += int(form['regular_day_stress']) * 3
+
+    # Exam Stress
+    score += int(form['exam_stress']) * 3
+
+    # Physical Tiredness
+    if form['physically_tired'] == 'Yes':
+        score += 10
+
+    # Headache/Fatigue
+    if form['headache_fatigue'] == 'Yes':
+        score += 10
+
+    return min(score, 100)
+def stress_level(score):
+    if score >= 70:
+        return "High"
+    elif score >= 40:
+        return "Medium"
+    else:
+        return "Low"
+@app.route('/stress_dashboard')
+def stress_dashboard():
+
+    college_id = session.get('college_id')
+
+    if not college_id:
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT sf.*, s.full_name
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        WHERE s.college_id=%s
+    """,(college_id,))
+
+    data = cursor.fetchall()
+
+    high = 0
+    medium = 0
+    low = 0
+
+    reports = []
+
+    for row in data:
+
+        score = calculate_stress_score(row)
+        level = stress_level(score)
+
+        reports.append({
+            "name": row['full_name'],
+            "score": score,
+            "level": level
+        })
+
+        if level == "High":
+            high += 1
+        elif level == "Medium":
+            medium += 1
+        else:
+            low += 1
+
+    total = len(data)
+
+    high_percent = round((high/total)*100,2) if total else 0
+    medium_percent = round((medium/total)*100,2) if total else 0
+    low_percent = round((low/total)*100,2) if total else 0
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'stress_dashboard.html',
+        reports=reports,
+        high=high_percent,
+        medium=medium_percent,
+        low=low_percent
+    )
+@app.route('/stress_report/<int:student_id>')
+def stress_report(student_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT sf.*, s.full_name
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id=s.id
+        WHERE sf.student_id=%s
+    """,(student_id,))
+
+    report = cursor.fetchone()
+
+    if not report:
+        return "No Report Found"
+
+    score = calculate_stress_score(report)
+    level = stress_level(score)
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'stress_report.html',
+        report=report,
+        score=score,
+        level=level
+    )
+def ai_explanation(score):
+
+    if score >= 70:
+        return """
+        Student has high stress.
+        Difficult subjects should be scheduled in morning.
+        Extra breaks should be provided.
+        Avoid consecutive hard subjects.
+        """
+
+    elif score >= 40:
+        return """
+        Student has moderate stress.
+        Balanced timetable recommended.
+        """
+
+    else:
+        return """
+        Student has low stress.
+        Standard timetable is sufficient.
+        """
 
 # ----------------- BOOTSTRAP RUNNER -----------------
 

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Stress Analytics</title>
+</head>
+<body>
+
+<h2>Stress Analytics Dashboard</h2>
+
+<h3>Overall Analysis</h3>
+
+<p>High Stress : {{high}}%</p>
+
+<p>Medium Stress : {{medium}}%</p>
+
+<p>Low Stress : {{low}}%</p>
+
+<hr>
+
+<h3>Student Reports</h3>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>Stress Score</th>
+<th>Stress Level</th>
+</tr>
+
+{% for r in reports %}
+
+<tr>
+<td>{{r.name}}</td>
+<td>{{r.score}}</td>
+<td>{{r.level}}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
