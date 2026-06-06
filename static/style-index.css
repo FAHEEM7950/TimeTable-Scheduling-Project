@@ -2,35 +2,28 @@ html, body {
     height: 100%;
     margin: 0;
 }
-
 body{
     margin:0;
     padding:0;
     font-family: Arial, sans-serif;
-
     background-image: url("/static/images/first_background.png");
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
-
-
 .container{
     text-align:center;
     margin-top:120px;
 }
-
 h1{
     color:#2c3e50;
     font-size:42px;
 }
-
 p{
     font-size:20px;
     color:#555;
     margin-bottom:30px;
 }
-
 button{
     padding:12px 25px;
     font-size:18px;
@@ -47,7 +40,6 @@ button{
     gap: 15px;
     margin: 10px 0;
 }
-
 button {
     padding: 12px 20px;
     font-size: 16px;
