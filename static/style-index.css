@@ -479,6 +479,67 @@ tr:hover td {
     cursor:pointer;
 }
 
+.portal-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
+    gap:30px;
+    margin-top:40px;
+}
+
+.portal-card{
+    background:rgba(20,30,60,0.8);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    padding:35px;
+    text-align:center;
+    backdrop-filter:blur(10px);
+    box-shadow:0 0 20px rgba(0,0,0,0.3);
+}
+
+.portal-card h2{
+    color:white;
+    margin-bottom:15px;
+}
+
+.portal-card p{
+    color:#bfc7d5;
+    line-height:1.6;
+    margin-bottom:25px;
+}
+
+.card-buttons{
+    display:flex;
+    gap:15px;
+    justify-content:center;
+}
+
+.primary-btn{
+    background:#4f8cff;
+    color:white;
+    border:none;
+    padding:14px 28px;
+    border-radius:12px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.secondary-btn{
+    background:transparent;
+    color:white;
+    border:1px solid #3b4a70;
+    padding:14px 28px;
+    border-radius:12px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.primary-btn:hover{
+    transform:translateY(-2px);
+}
+
+.secondary-btn:hover{
+    background:#1b2745;
+}
 /* Light Theme */
 
 .light-mode{
@@ -486,11 +547,32 @@ tr:hover td {
     color:#222;
 }
 
-.light-mode .container{
+.light-mode .portal-card{
+    background:white;
+    color:#222;
+    border:1px solid #ddd;
+}
+
+.light-mode .portal-card h2{
     color:#222;
 }
 
-.light-mode button{
+.light-mode .portal-card p{
+    color:#555;
+}
+
+.light-mode .navbar{
+    background:white;
+    border-bottom:1px solid #ddd;
+}
+
+.light-mode .primary-btn{
     background:#2563eb;
     color:white;
+}
+
+.light-mode .secondary-btn{
+    background:white;
+    color:#222;
+    border:1px solid #ccc;
 }
