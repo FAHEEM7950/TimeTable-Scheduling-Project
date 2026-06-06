@@ -6,79 +6,50 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 
+
 <body>
 
-    <!-- Navbar -->
-    <div class="navbar">
-        <h2>AI-Sched</h2>
+<div class="container">
 
-        <button id="themeToggle">
-            🌙 Dark Mode
-        </button>
+    <h1>AI-BasedSmart Timetable Scheduling</h1>
+
+    <p>Using Student & Faculty Preferences with Genetic Algorithms</p>
+
+    <div class="button-row">
+        <a href="/college_register"><button>College Register</button></a>
+        <a href="/college_login"><button>College Login</button></a>
     </div>
 
-    <div class="container">
+    <br>
 
-        <h1>AI-Based Smart Timetable Scheduling</h1>
-
-        <p>
-            Using Student & Faculty Preferences with Genetic Algorithms
-        </p>
-
-        <div class="button-row">
-            <a href="/college_register"><button>College Register</button></a>
-            <a href="/college_login"><button>College Login</button></a>
-        </div>
-
-        <br>
-
-        <div class="button-row">
-            <a href="/student_register"><button>Student Register</button></a>
-            <a href="/student_login"><button>Student Login</button></a>
-        </div>
-
-        <br>
-
-        <div class="button-row">
-            <a href="/faculty_register"><button>Faculty Register</button></a>
-            <a href="/faculty_login"><button>Faculty Login</button></a>
-        </div>
-
-        <br>
-
-        <div class="button-row">
-            <a href="/admin_register"><button>Admin Register</button></a>
-            <a href="/admin_login"><button>Admin Login</button></a>
-        </div>
-
+    <div class="button-row">
+        <a href="/student_register"><button>Student Register</button></a>
+        <a href="/student_login"><button>Student Login</button></a>
     </div>
 
-    <script>
-        const toggleBtn = document.getElementById("themeToggle");
+    <br>
 
-        toggleBtn.addEventListener("click", () => {
+    <div class="button-row">
+        <a href="/faculty_register"><button>Faculty Register</button></a>
+        <a href="/faculty_login"><button>Faculty Login</button></a>
+    </div>
 
-            document.body.classList.toggle("light-mode");
+    <br>
 
-            if (document.body.classList.contains("light-mode")) {
-                toggleBtn.innerHTML = "☀️ Light Mode";
-                localStorage.setItem("theme", "light");
-            } else {
-                toggleBtn.innerHTML = "🌙 Dark Mode";
-                localStorage.setItem("theme", "dark");
-            }
-        });
+    <div class="button-row">
+        <a href="/admin_register"><button>Admin Register</button></a>
+        <a href="/admin_login"><button>Admin Login</button></a>
+    </div>
 
-        window.onload = () => {
-            const savedTheme = localStorage.getItem("theme");
+</div>
+<button id="themeToggle">🌙 Dark Mode</button>
+<div class="navbar">
+    <h2>AI-Sched</h2>
 
-            if (savedTheme === "light") {
-                document.body.classList.add("light-mode");
-                toggleBtn.innerHTML = "☀️ Light Mode";
-            }
-        };
-    </script>
+    <button id="themeToggle">🌙 Dark Mode</button>
+</div>
+
 
 </body>
-
 </html>
+add and give to me
