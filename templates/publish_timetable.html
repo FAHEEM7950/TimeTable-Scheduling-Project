@@ -7,11 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
+    </script>
+
+    {% set is_local = session.get('local_admin_id') is not none %}
+    {% set dash_url = '/admin_dashboard' if is_local else '/college_dashboard' %}
 
     <header>
         <h1>{{ college.college_name }} Admin</h1>
         <div class="nav-links">
-            <a href="/college_dashboard" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
+            <a href="{{ dash_url }}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -19,12 +26,14 @@
         <div class="sidebar">
             <h3 class="sidebar-title">Navigation</h3>
             <ul class="sidebar-menu">
-                <li><a href="/college_dashboard" class="sidebar-link">Overview</a></li>
+                <li><a href="{{ dash_url }}" class="sidebar-link">Overview</a></li>
                 <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
                 <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link active">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
-                <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+                {% if not is_local %}
+                    <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+                {% endif %}
             </ul>
         </div>
 
@@ -44,6 +53,7 @@
                     <thead>
                         <tr>
                             <th>Branch</th>
+                            <th>Section</th>
                             <th>Year</th>
                             <th>Semester</th>
                             <th>Status</th>
@@ -55,6 +65,7 @@
                             {% for sch in schedules %}
                                 <tr>
                                     <td><strong>{{ sch.branch }}</strong></td>
+                                    <td><span style="background: rgba(59, 130, 246, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Section {{ sch.section_name }}</span></td>
                                     <td>Year {{ sch.year_level }}</td>
                                     <td>Semester {{ sch.semester }}</td>
                                     <td>
@@ -67,6 +78,7 @@
                                     <td>
                                         <form method="POST" action="/toggle_publish_timetable" style="display:inline;">
                                             <input type="hidden" name="branch" value="{{ sch.branch }}">
+                                            <input type="hidden" name="section_name" value="{{ sch.section_name }}">
                                             <input type="hidden" name="year_level" value="{{ sch.year_level }}">
                                             <input type="hidden" name="semester" value="{{ sch.semester }}">
                                             <input type="hidden" name="published" value="{{ sch.published }}">
@@ -81,7 +93,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-secondary);">No schedules generated yet. Please generate one under "Manage Periods & Generate".</td>
+                                <td colspan="6" style="text-align: center; color: var(--text-secondary);">No schedules generated yet. Please generate one under "Manage Periods & Generate".</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -91,5 +103,14 @@
         </main>
     </div>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

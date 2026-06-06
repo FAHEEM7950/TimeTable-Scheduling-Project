@@ -7,11 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
+    <script>
+        // Apply theme immediately to prevent screen flashing
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+    </script>
 
     <header>
         <h1>AI-Sched</h1>
         <div class="nav-links">
             <a href="/developer_login">Developer Login</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -23,8 +30,11 @@
             <!-- Developer Portal -->
             <div class="portal-card">
                 <h3>Developer Portal</h3>
-                <p>Access global analytics, review active colleges, and inspect Student/Faculty/Admin database metrics.</p>
-                <a href="/developer_login" class="btn">Developer Dashboard</a>
+                <p>Register as a developer, access global analytics, and inspect Student/Faculty/Admin database metrics across all colleges.</p>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/developer_register" class="btn btn-secondary" style="flex: 1;">Register</a>
+                    <a href="/developer_login" class="btn" style="flex: 1;">Login</a>
+                </div>
             </div>
 
             <!-- College Portal -->
@@ -54,5 +64,14 @@
         </div>
     </main>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Developer Login</title>
+    <title>Developer Registration</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
@@ -21,8 +21,8 @@
 
     <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
         <div class="form-container">
-            <h2 class="form-title">Developer Portal</h2>
-            <p class="form-subtitle">Enter your registered developer credentials</p>
+            <h2 class="form-title">Developer Registration</h2>
+            <p class="form-subtitle">Create a global developer account to inspect all colleges</p>
 
             {% if error %}
                 <div class="message-box message-error">{{ error }}</div>
@@ -30,8 +30,13 @@
 
             <form method="POST">
                 <div class="form-group">
-                    <label for="username">Developer Username</label>
-                    <input type="text" id="username" name="username" class="form-control" placeholder="developer" required>
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="Choose a username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Developer Email</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="developer@system.com" required>
                 </div>
 
                 <div class="form-group">
@@ -39,11 +44,11 @@
                     <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
                 </div>
 
-                <button type="submit" class="btn" style="margin-top: 1rem;">Log In</button>
+                <button type="submit" class="btn" style="margin-top: 1rem;">Register Developer</button>
             </form>
-
+            
             <p style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
-                Don't have an account? <a href="/developer_register" style="color: var(--accent); text-decoration: none;">Register here</a>
+                Already registered? <a href="/developer_login" style="color: var(--accent); text-decoration: none;">Login here</a>
             </p>
         </div>
     </main>

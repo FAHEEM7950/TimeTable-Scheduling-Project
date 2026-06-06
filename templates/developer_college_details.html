@@ -17,11 +17,15 @@
     </style>
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
+    </script>
 
     <header>
         <h1>Developer Admin</h1>
         <div class="nav-links">
             <a href="/developer_dashboard" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -38,6 +42,16 @@
                         {% for b in branches %}
                             <option value="{{ b }}" {% if b == selected_branch %}selected{% endif %}>{{ b }}</option>
                         {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="section_name">Section:</label>
+                    <select id="section_name" name="section_name">
+                        <option value="">-- All Sections --</option>
+                        <option value="A" {% if selected_section == 'A' %}selected{% endif %}>Section A</option>
+                        <option value="B" {% if selected_section == 'B' %}selected{% endif %}>Section B</option>
+                        <option value="C" {% if selected_section == 'C' %}selected{% endif %}>Section C</option>
                     </select>
                 </div>
 
@@ -73,6 +87,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
+                            <th>Branch / Department</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -81,11 +96,12 @@
                                 <tr>
                                     <td>{{ admin.id }}</td>
                                     <td><strong>{{ admin.username }}</strong></td>
+                                    <td><span style="background: rgba(168, 85, 247, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ admin.branch or 'Super Admin' }}</span></td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="2" style="text-align: center; color: var(--text-secondary);">No admins found for this college.</td>
+                                <td colspan="3" style="text-align: center; color: var(--text-secondary);">No admins found for this college.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -171,5 +187,14 @@
         </main>
     </div>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

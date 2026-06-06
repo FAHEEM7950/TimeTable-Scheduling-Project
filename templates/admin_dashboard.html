@@ -3,31 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - {{ college.college_name }}</title>
+    <title>Department Admin Dashboard - {{ college.college_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
-    <style>
-        .share-box {
-            background: rgba(59, 130, 246, 0.05);
-            border: 1px dashed var(--accent);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .share-box code {
-            font-size: 0.95rem;
-            color: var(--accent);
-        }
-    </style>
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
+    </script>
 
     <header>
         <h1>{{ college.college_name }} Admin</h1>
         <div class="nav-links">
+            <span style="color: var(--text-secondary); margin-right: 1rem;">Logged in as: <strong>{{ admin.branch }} Admin ({{ admin.username }})</strong></span>
             <a href="/admin_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -40,120 +29,51 @@
                 <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
-                <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
             </ul>
         </div>
 
         <main class="main-content">
-            <h2 class="page-title">Local College Administrator Dashboard</h2>
-
-            <!-- Portal URL Share Box -->
-            <div class="share-box">
-                <div>
-                    <strong>Portal Share Link:</strong> Share this link with your students and faculty to let them register/login:
-                    <br>
-                    <code>{{ request.host_url }}college_portal/{{ college.id }}</code>
-                </div>
-                <button onclick="navigator.clipboard.writeText('{{ request.host_url }}college_portal/{{ college.id }}'); alert('Link copied to clipboard!')" class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Copy Link</button>
-            </div>
+            <h2 class="page-title">{{ admin.branch }} Department Dashboard</h2>
 
             <!-- Stats Overview -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h4>Total Faculty</h4>
+                    <h4>Department Faculty</h4>
                     <div class="value">{{ stats.faculty_count }}</div>
                 </div>
                 <div class="stat-card">
-                    <h4>Total Students</h4>
+                    <h4>Department Students</h4>
                     <div class="value">{{ stats.student_count }}</div>
                 </div>
                 <div class="stat-card">
-                    <h4>Total Subjects</h4>
+                    <h4>Department Subjects</h4>
                     <div class="value">{{ stats.subject_count }}</div>
                 </div>
             </div>
 
             <!-- Recent Notifications / AI Status -->
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: var(--accent);">AI Scheduler Status</h3>
+                <h3 style="margin-bottom: 1rem; color: var(--accent);">Departmental Control</h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
-                    Configure subjects for each year, semester, and branch under <strong>Manage Subjects</strong>, then generate the initial weekly schedule under <strong>Manage Periods & Generate</strong>.
+                    As the **{{ admin.branch }} Admin**, you can add subjects, schedule periods, and generate/publish timetables specifically for the **{{ admin.branch }}** branch. Use the menu on the left to get started.
                 </p>
                 <div style="display: flex; gap: 1rem;">
-                    <a href="/manage_periods" class="btn" style="width: auto;">Open Timetable Builder</a>
-                    <a href="/manage_subjects" class="btn btn-secondary" style="width: auto;">Add/Edit Subjects</a>
+                    <a href="/manage_periods" class="btn" style="width: auto;">Build {{ admin.branch }} Timetable</a>
+                    <a href="/manage_subjects" class="btn btn-secondary" style="width: auto;">View Subjects</a>
                 </div>
-            </div>
-
-            <!-- Local Registered Admins List -->
-            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Admins</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Admin ID</th>
-                            <th>Username</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if admins %}
-                            {% for adm in admins %}
-                                <tr>
-                                    <td>{{ adm.id }}</td>
-                                    <td><strong>{{ adm.username }}</strong></td>
-                                </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="2" style="text-align: center; color: var(--text-secondary);">No local admins registered yet.</td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
             </div>
 
         </main>
     </div>
-    <a href="{{ url_for('stress_dashboard') }}">
-    <button>Stress Analytics Dashboard</button>
-</a>
-<div class="card">
 
-    <h3 style="color:#3b82f6;">
-        Stress Analytics Dashboard
-    </h3>
-
-    <p>
-        View High, Medium and Low stress statistics based on student stress forms.
-    </p>
-
-    <a href="{{ url_for('stress_dashboard') }}">
-        <button class="primary-btn">
-            Open Dashboard
-        </button>
-    </a>
-
-</div>
-
-<br>
-
-<div class="card">
-
-    <h3 style="color:#3b82f6;">
-        AI Timetable Optimization
-    </h3>
-
-    <p>
-        AI places difficult subjects in suitable timetable slots based on stress analysis.
-    </p>
-
-    <a href="{{ url_for('manage_periods') }}">
-        <button class="primary-btn">
-            Generate AI Timetable
-        </button>
-    </a>
-
-</div>
-
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

@@ -23,11 +23,15 @@
     </style>
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
+    </script>
 
     <header>
-        <h1>{{ college.college_name }} Admin</h1>
+        <h1>{{ college.college_name }} Super Admin</h1>
         <div class="nav-links">
             <a href="/college_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -45,7 +49,7 @@
         </div>
 
         <main class="main-content">
-            <h2 class="page-title">College Administrator Dashboard</h2>
+            <h2 class="page-title">College Super Administrator Dashboard</h2>
 
             <!-- Portal URL Share Box -->
             <div class="share-box">
@@ -86,13 +90,14 @@
             </div>
 
             <!-- Local Registered Admins List -->
-            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Admins</h3>
+            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Local Department Admins</h3>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
                             <th>Admin ID</th>
                             <th>Username</th>
+                            <th>Branch / Department</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,11 +106,12 @@
                                 <tr>
                                     <td>{{ adm.id }}</td>
                                     <td><strong>{{ adm.username }}</strong></td>
+                                    <td><span style="background: rgba(168, 85, 247, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ adm.branch }}</span></td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="2" style="text-align: center; color: var(--text-secondary);">No local admins registered yet.</td>
+                                <td colspan="3" style="text-align: center; color: var(--text-secondary);">No local departmental admins registered yet.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -114,9 +120,15 @@
 
         </main>
     </div>
-    <a href="{{ url_for('stress_dashboard') }}">
-    <button>View Stress Analytics</button>
-</a>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

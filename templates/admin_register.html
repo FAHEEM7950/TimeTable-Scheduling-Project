@@ -7,30 +7,38 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
+    <script>
+        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
+    </script>
 
     <header>
         <h1>{{ college.college_name }} Portal</h1>
         <div class="nav-links">
             <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
     <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
         <div class="form-container">
             <h2 class="form-title">Local Admin Register</h2>
-            <p class="form-subtitle">Create a local administrator login for {{ college.college_name }}</p>
+            <p class="form-subtitle">Create a local department administrator login for {{ college.college_name }}</p>
 
             {% if error %}
                 <div class="message-box message-error">{{ error }}</div>
             {% endif %}
 
             <form method="POST">
-                <!-- Keep college ID in hidden input or URL param -->
                 <input type="hidden" name="college_id" value="{{ college.id }}">
 
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" class="form-control" placeholder="Admin username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="branch">Department / Branch (e.g. CSE, ECE)</label>
+                    <input type="text" id="branch" name="branch" class="form-control" placeholder="e.g. CSE" required>
                 </div>
 
                 <div class="form-group">
@@ -43,5 +51,14 @@
         </div>
     </main>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>
