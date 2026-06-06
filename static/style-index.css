@@ -465,3 +465,32 @@ tr:hover td {
     color: var(--danger);
     border: 1px solid var(--danger);
 }
+.navbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 30px;
+}
+
+#themeToggle{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+/* Light Theme */
+
+.light-mode{
+    background:#f5f7fa;
+    color:#222;
+}
+
+.light-mode .container{
+    color:#222;
+}
+
+.light-mode button{
+    background:#2563eb;
+    color:white;
+}

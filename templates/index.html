@@ -1,58 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Timetable Scheduling</title>
+    <title>Smart Timetable</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
+
 <body>
 
-    <header>
-        <h1>AI-Sched</h1>
-        <div class="nav-links">
-            <a href="/developer_login">Developer Login</a>
+    <!-- Navbar -->
+    <div class="navbar">
+        <h2>AI-Sched</h2>
+
+        <button id="themeToggle">
+            🌙 Dark Mode
+        </button>
+    </div>
+
+    <div class="container">
+
+        <h1>AI-Based Smart Timetable Scheduling</h1>
+
+        <p>
+            Using Student & Faculty Preferences with Genetic Algorithms
+        </p>
+
+        <div class="button-row">
+            <a href="/college_register"><button>College Register</button></a>
+            <a href="/college_login"><button>College Login</button></a>
         </div>
-    </header>
 
-    <main class="index-container">
-        <h2 class="hero-title">AI-Based Smart Timetable Scheduling</h2>
-        <p class="hero-subtitle">Optimize class schedules dynamically using Student Stress Factors, Faculty Preferences, and AI-driven substitution/swapping.</p>
+        <br>
 
-        <div class="portal-grid">
-            <!-- Developer Portal -->
-            <div class="portal-card">
-                <h3>Developer Portal</h3>
-                <p>Access global analytics, review active colleges, and inspect Student/Faculty/Admin database metrics.</p>
-                <a href="/developer_login" class="btn">Developer Dashboard</a>
-            </div>
-
-            <!-- College Portal -->
-            <div class="portal-card">
-                <h3>College Admin Portal</h3>
-                <p>Register your college institution, set up local departments, and configure admins, teachers, and subjects.</p>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="/college_register" class="btn btn-secondary" style="flex: 1;">Register College</a>
-                    <a href="/college_login" class="btn" style="flex: 1;">College Login</a>
-                </div>
-            </div>
-
-            <!-- Select Your College Portal -->
-            <div class="portal-card" style="grid-column: span 2;">
-                <h3>Access College Portals (Student / Faculty / Admin)</h3>
-                <p>Select your registered college to register or login as a Student, Faculty member, or Local Admin.</p>
-                <form onsubmit="event.preventDefault(); const cid = document.getElementById('college_select').value; if(cid) { window.location.href='/college_portal/' + cid; } else { alert('Please select a college'); }" style="display: flex; gap: 1rem; width: 100%; max-width: 600px; margin: auto; justify-content: center; align-items: center; flex-wrap: wrap;">
-                    <select id="college_select" class="form-control" style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px; flex-grow: 1; min-width: 250px;" required>
-                        <option value="">-- Choose Your College --</option>
-                        {% for col in colleges %}
-                            <option value="{{ col.id }}">{{ col.college_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn" style="width: auto; padding: 0.75rem 2rem;">Enter Portal</button>
-                </form>
-            </div>
+        <div class="button-row">
+            <a href="/student_register"><button>Student Register</button></a>
+            <a href="/student_login"><button>Student Login</button></a>
         </div>
-    </main>
+
+        <br>
+
+        <div class="button-row">
+            <a href="/faculty_register"><button>Faculty Register</button></a>
+            <a href="/faculty_login"><button>Faculty Login</button></a>
+        </div>
+
+        <br>
+
+        <div class="button-row">
+            <a href="/admin_register"><button>Admin Register</button></a>
+            <a href="/admin_login"><button>Admin Login</button></a>
+        </div>
+
+    </div>
+
+    <script>
+        const toggleBtn = document.getElementById("themeToggle");
+
+        toggleBtn.addEventListener("click", () => {
+
+            document.body.classList.toggle("light-mode");
+
+            if (document.body.classList.contains("light-mode")) {
+                toggleBtn.innerHTML = "☀️ Light Mode";
+                localStorage.setItem("theme", "light");
+            } else {
+                toggleBtn.innerHTML = "🌙 Dark Mode";
+                localStorage.setItem("theme", "dark");
+            }
+        });
+
+        window.onload = () => {
+            const savedTheme = localStorage.getItem("theme");
+
+            if (savedTheme === "light") {
+                document.body.classList.add("light-mode");
+                toggleBtn.innerHTML = "☀️ Light Mode";
+            }
+        };
+    </script>
 
 </body>
+
 </html>
