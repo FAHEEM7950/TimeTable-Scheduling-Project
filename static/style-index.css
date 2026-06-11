@@ -15,7 +15,7 @@
     --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
-body.light-mode {
+.light-mode {
     --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
     --text-primary: #0f172a;
@@ -47,7 +47,7 @@ body.light-mode {
     transform: translateY(-1px);
 }
 
-body.light-mode .theme-switch:hover {
+.light-mode .theme-switch:hover {
     background: rgba(0, 0, 0, 0.05);
 }
 

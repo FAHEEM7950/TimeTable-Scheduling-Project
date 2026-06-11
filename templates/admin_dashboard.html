@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Department Admin Dashboard - {{ college.college_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 <body>
     <script>
@@ -29,6 +30,8 @@
                 <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
+                <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
             </ul>
         </div>
 

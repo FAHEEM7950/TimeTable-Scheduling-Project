@@ -1,43 +1,282 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Stress Analytics</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Analysis Dashboard - {{ college.college_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .chart-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .chart-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            text-align: center;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+    </style>
 </head>
 <body>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 
-<h2>Stress Analytics Dashboard</h2>
+    {% set is_local = session.get('local_admin_id') is not none %}
+    {% set is_dev = session.get('developer_logged_in') is not none %}
+    
+    {% if is_dev %}
+        {% set dash_url = '/developer_college_details/' ~ college.id %}
+    {% elif is_local %}
+        {% set dash_url = '/admin_dashboard' %}
+    {% else %}
+        {% set dash_url = '/college_dashboard' %}
+    {% endif %}
 
-<h3>Overall Analysis</h3>
+    <header>
+        <h1>{{ college.college_name }} Portal</h1>
+        <div class="nav-links">
+            <a href="{{ dash_url }}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back</a>
+        </div>
+    </header>
 
-<p>High Stress : {{high}}%</p>
+    <div class="dashboard-wrapper">
+        {% if not is_dev %}
+        <div class="sidebar">
+            <h3 class="sidebar-title">Navigation</h3>
+            <ul class="sidebar-menu">
+                <li><a href="{{ dash_url }}" class="sidebar-link">Overview</a></li>
+                <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
+                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
+                <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
+                <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
+                <li><a href="/stress_dashboard" class="sidebar-link active">Stress Analysis</a></li>
+            </ul>
+        </div>
+        {% endif %}
 
-<p>Medium Stress : {{medium}}%</p>
+        <main class="main-content" style="{% if is_dev %}padding: 2.5rem 5rem; max-width: 1400px; margin: auto;{% endif %}">
+            <h2 class="page-title">Student Stress & Timing Analysis</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Visualizing student-submitted preferences, fatigue levels, and academic stress indicators.
+            </p>
 
-<p>Low Stress : {{low}}%</p>
+            <!-- Chart Grid -->
+            <div class="chart-grid">
+                
+                <!-- 1. Stress level comparison -->
+                <div class="chart-card">
+                    <h3>Average Stress Levels (Scale 1-10)</h3>
+                    <div class="chart-container">
+                        <canvas id="stressChart"></canvas>
+                    </div>
+                </div>
 
-<hr>
+                <!-- 2. Hardest subjects -->
+                <div class="chart-card">
+                    <h3>Most Challenging Subjects</h3>
+                    <div class="chart-container">
+                        <canvas id="hardestSubjectChart"></canvas>
+                    </div>
+                </div>
 
-<h3>Student Reports</h3>
+                <!-- 3. Easiest subjects -->
+                <div class="chart-card">
+                    <h3>Easiest / Most Relaxing Subjects</h3>
+                    <div class="chart-container">
+                        <canvas id="easiestSubjectChart"></canvas>
+                    </div>
+                </div>
 
-<table border="1">
+                <!-- 4. Sleep distribution -->
+                <div class="chart-card">
+                    <h3>Average Sleep Hours Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="sleepHoursChart"></canvas>
+                    </div>
+                </div>
 
-<tr>
-<th>Name</th>
-<th>Stress Score</th>
-<th>Stress Level</th>
-</tr>
+                <!-- 5. Productivity hours -->
+                <div class="chart-card">
+                    <h3>Peak Productivity Times</h3>
+                    <div class="chart-container">
+                        <canvas id="productivityChart"></canvas>
+                    </div>
+                </div>
 
-{% for r in reports %}
+                <!-- 6. Feel fresh after sleep -->
+                <div class="chart-card">
+                    <h3>Do Students Feel Refreshed After Sleep?</h3>
+                    <div class="chart-container">
+                        <canvas id="freshSleepChart"></canvas>
+                    </div>
+                </div>
 
-<tr>
-<td>{{r.name}}</td>
-<td>{{r.score}}</td>
-<td>{{r.level}}</td>
-</tr>
+            </div>
+        </main>
+    </div>
 
-{% endfor %}
+    <!-- Chart rendering logic -->
+    <script>
+        // Global Chart.js styling variables for dark/light themes
+        const isLight = document.documentElement.classList.contains('light-mode');
+        const textColor = isLight ? '#0f172a' : '#f3f4f6';
+        const gridColor = isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)';
+        
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
 
-</table>
+        // Helper function for theme-friendly colors
+        function getPalette(count) {
+            const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b', '#ec4899', '#06b6d4', '#14b8a6', '#6366f1'];
+            return colors.slice(0, Math.max(count, 1));
+        }
 
+        // 1. Stress Chart
+        const ctxStress = document.getElementById('stressChart').getContext('2d');
+        new Chart(ctxStress, {
+            type: 'bar',
+            data: {
+                labels: ['Regular Days Stress', 'Exam Period Stress'],
+                datasets: [{
+                    label: 'Average Score (out of 10)',
+                    data: [{{ stress_stats['avg_regular'] or 0 }}, {{ stress_stats['avg_exam'] or 0 }}],
+                    backgroundColor: ['#3b82f6', '#ef4444'],
+                    borderRadius: 8,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 10 } }
+            }
+        });
+
+        // 2. Hardest Subjects Chart
+        const ctxHard = document.getElementById('hardestSubjectChart').getContext('2d');
+        const hardLabels = {{ hardest_subjects['labels'] | tojson }};
+        const hardData   = {{ hardest_subjects['values'] | tojson }};
+        new Chart(ctxHard, {
+            type: hardLabels.length ? 'doughnut' : 'bar',
+            data: {
+                labels: hardLabels.length ? hardLabels : ['No data yet'],
+                datasets: [{
+                    data: hardData.length ? hardData : [1],
+                    backgroundColor: getPalette(hardLabels.length || 1),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 3. Easiest Subjects Chart
+        const ctxEasy = document.getElementById('easiestSubjectChart').getContext('2d');
+        const easyLabels = {{ easiest_subjects['labels'] | tojson }};
+        const easyData   = {{ easiest_subjects['values'] | tojson }};
+        new Chart(ctxEasy, {
+            type: easyLabels.length ? 'doughnut' : 'bar',
+            data: {
+                labels: easyLabels.length ? easyLabels : ['No data yet'],
+                datasets: [{
+                    data: easyData.length ? easyData : [1],
+                    backgroundColor: getPalette(easyLabels.length || 1),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 4. Sleep Hours Chart
+        const ctxSleep = document.getElementById('sleepHoursChart').getContext('2d');
+        const sleepLabels = {{ sleep_hours['labels'] | tojson }};
+        const sleepData   = {{ sleep_hours['values'] | tojson }};
+        new Chart(ctxSleep, {
+            type: sleepLabels.length ? 'pie' : 'bar',
+            data: {
+                labels: sleepLabels.length ? sleepLabels : ['No data yet'],
+                datasets: [{
+                    data: sleepData.length ? sleepData : [1],
+                    backgroundColor: getPalette(sleepLabels.length || 1),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 5. Productivity Chart
+        const ctxProd = document.getElementById('productivityChart').getContext('2d');
+        const prodLabels = {{ productivity['labels'] | tojson }};
+        const prodData   = {{ productivity['values'] | tojson }};
+        new Chart(ctxProd, {
+            type: prodLabels.length ? 'pie' : 'bar',
+            data: {
+                labels: prodLabels.length ? prodLabels : ['No data yet'],
+                datasets: [{
+                    data: prodData.length ? prodData : [1],
+                    backgroundColor: getPalette(prodLabels.length || 1),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // 6. Feel Fresh Chart
+        const ctxFresh = document.getElementById('freshSleepChart').getContext('2d');
+        const freshLabels = {{ fresh_sleep['labels'] | tojson }};
+        const freshData   = {{ fresh_sleep['values'] | tojson }};
+        new Chart(ctxFresh, {
+            type: 'bar',
+            data: {
+                labels: freshLabels.length ? freshLabels : ['No data yet'],
+                datasets: [{
+                    label: 'Student Count',
+                    data: freshData.length ? freshData : [0],
+                    backgroundColor: '#10b981',
+                    borderRadius: 6,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
 </body>
 </html>

@@ -15,6 +15,7 @@
             color: var(--accent);
         }
     </style>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 <body>
     <script>
@@ -33,6 +34,13 @@
         <main class="main-content" style="padding: 2.5rem 5rem; max-width: 1400px; margin: auto;">
             <h2 class="page-title">Inspecting: {{ college.college_name }} ({{ college.college_code }})</h2>
 
+            <!-- Stress Analysis Quick Link -->
+            <div style="margin-bottom: 1.5rem;">
+                <a href="/stress_dashboard?college_id={{ college.id }}" class="btn" style="width: auto; padding: 0.5rem 1.5rem; background: linear-gradient(135deg, #a855f7, #3b82f6);">
+                    📊 View Stress Analysis Dashboard
+                </a>
+            </div>
+
             <!-- Filter Controls -->
             <form method="GET" class="filter-bar">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -49,9 +57,13 @@
                     <label for="section_name">Section:</label>
                     <select id="section_name" name="section_name">
                         <option value="">-- All Sections --</option>
-                        <option value="A" {% if selected_section == 'A' %}selected{% endif %}>Section A</option>
-                        <option value="B" {% if selected_section == 'B' %}selected{% endif %}>Section B</option>
-                        <option value="C" {% if selected_section == 'C' %}selected{% endif %}>Section C</option>
+                        {% if sections %}
+                            {% for sec in sections %}
+                                <option value="{{ sec.section_name }}" {% if selected_section == sec.section_name %}selected{% endif %}>{{ sec.branch }} - Section {{ sec.section_name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="">No sections configured</option>
+                        {% endif %}
                     </select>
                 </div>
 

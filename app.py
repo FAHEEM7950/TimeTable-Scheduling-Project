@@ -11,7 +11,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="@Faheem7950",
+        password="Ramakrishna@2007",
         database="timetable_db"
     )
 
@@ -130,6 +130,10 @@ def developer_college_details(college_id):
     )
     branches = [row['branch'] for row in cursor.fetchall() if row['branch']]
 
+    # Get sections dynamically from DB
+    cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+    sections = cursor.fetchall()
+
     # Admins
     cursor.execute("SELECT * FROM admin WHERE college_id = %s", (college_id,))
     admins = cursor.fetchall()
@@ -171,6 +175,7 @@ def developer_college_details(college_id):
         faculty_list=faculty_list,
         students=students,
         branches=branches,
+        sections=sections,
         selected_branch=selected_branch,
         selected_section=selected_section,
         selected_year=selected_year,
@@ -1012,7 +1017,7 @@ def admin_view_timetable():
         return redirect(url_for('home'))
 
     selected_branch = admin_branch if admin_branch else request.args.get('branch', '')
-    selected_section = request.args.get('section_name', 'A')
+    selected_section = request.args.get('section_name', '')
     selected_year = request.args.get('year_level', '1')
     selected_semester = request.args.get('semester', '1')
 
@@ -1025,6 +1030,19 @@ def admin_view_timetable():
     # Get branches
     cursor.execute("SELECT DISTINCT branch FROM subjects WHERE college_id = %s", (college_id,))
     branches = [row['branch'] for row in cursor.fetchall() if row['branch']]
+
+    # Get sections
+    if selected_branch:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY section_name", (college_id, selected_branch))
+    else:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+    sections = cursor.fetchall()
+
+    # Fallback to first available section if none is selected
+    if not selected_section and sections:
+        selected_section = sections[0]['section_name']
+    elif not selected_section:
+        selected_section = 'A'
 
     timetable = None
     if selected_branch:
@@ -1043,6 +1061,7 @@ def admin_view_timetable():
         'admin_view_timetable.html',
         college=college,
         branches=branches,
+        sections=sections,
         selected_branch=selected_branch,
         selected_section=selected_section,
         selected_year=int(selected_year),
@@ -1050,11 +1069,232 @@ def admin_view_timetable():
         timetable=timetable
     )
 
+@app.route('/manage_sections', methods=['GET', 'POST'])
+def manage_sections():
+    college_id = session.get('college_id')
+    if not college_id:
+        return redirect(url_for('home'))
+
+    local_admin_id = session.get('local_admin_id')
+    admin_branch = session.get('admin_branch')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
+    college = cursor.fetchone()
+
+    success = session.pop('section_success', None)
+    error = session.pop('section_error', None)
+
+    if request.method == 'POST':
+        branch = admin_branch if admin_branch else request.form.get('branch', '').upper().strip()
+        section_name = request.form.get('section_name', '').upper().strip()
+
+        if not branch or not section_name:
+            error = "Branch and Section Name are required."
+        else:
+            try:
+                # Check for duplicate
+                cursor.execute(
+                    "SELECT * FROM sections WHERE college_id = %s AND branch = %s AND section_name = %s",
+                    (college_id, branch, section_name)
+                )
+                if cursor.fetchone():
+                    error = f"Section '{section_name}' already exists for branch '{branch}'."
+                else:
+                    cursor.execute(
+                        "INSERT INTO sections (college_id, branch, section_name) VALUES (%s, %s, %s)",
+                        (college_id, branch, section_name)
+                    )
+                    conn.commit()
+                    success = f"Section '{section_name}' successfully added for branch '{branch}'."
+            except mysql.connector.Error as err:
+                error = f"Failed to add section: {err.msg}"
+
+    # Get sections to display
+    if admin_branch:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY section_name", (college_id, admin_branch))
+    else:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+    sections = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'manage_sections.html',
+        college=college,
+        sections=sections,
+        success=success,
+        error=error
+    )
+
+@app.route('/delete_section/<int:section_id>', methods=['POST'])
+def delete_section(section_id):
+    college_id = session.get('college_id')
+    if not college_id:
+        return redirect(url_for('home'))
+
+    local_admin_id = session.get('local_admin_id')
+    admin_branch = session.get('admin_branch')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    if admin_branch:
+        cursor.execute("SELECT * FROM sections WHERE id = %s AND college_id = %s AND branch = %s", (section_id, college_id, admin_branch))
+    else:
+        cursor.execute("SELECT * FROM sections WHERE id = %s AND college_id = %s", (section_id, college_id))
+    
+    section = cursor.fetchone()
+    if section:
+        cursor.execute("DELETE FROM sections WHERE id = %s", (section_id,))
+        conn.commit()
+        session['section_success'] = f"Section '{section['section_name']}' deleted successfully."
+    else:
+        session['section_error'] = "Section not found or unauthorized access."
+
+    cursor.close()
+    conn.close()
+    return redirect(url_for('manage_sections'))
+
+@app.route('/stress_dashboard')
+def stress_dashboard():
+    college_id = session.get('college_id')
+    param_college_id = request.args.get('college_id')
+    if param_college_id and session.get('developer_logged_in'):
+        college_id = param_college_id
+
+    if not college_id:
+        return redirect(url_for('home'))
+
+    admin_branch = session.get('admin_branch')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
+    college = cursor.fetchone()
+
+    # Build WHERE clause based on admin branch
+    if admin_branch:
+        where_clause = "WHERE s.college_id = %s AND s.branch = %s"
+        params = (college_id, admin_branch)
+    else:
+        where_clause = "WHERE s.college_id = %s"
+        params = (college_id,)
+
+    # 1. Stress Stats — using explicit named keys
+    cursor.execute(f"""
+        SELECT AVG(sf.regular_day_stress) as avg_regular, AVG(sf.exam_stress) as avg_exam
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause}
+    """, params)
+    stress_stats_row = cursor.fetchone()
+    avg_regular = round(float(stress_stats_row['avg_regular']), 1) if stress_stats_row and stress_stats_row['avg_regular'] else 0.0
+    avg_exam = round(float(stress_stats_row['avg_exam']), 1) if stress_stats_row and stress_stats_row['avg_exam'] else 0.0
+    stress_stats = {'avg_regular': avg_regular, 'avg_exam': avg_exam}
+
+    # 2. Hardest Subjects — use explicit named keys: 'subject' and 'cnt'
+    cursor.execute(f"""
+        SELECT sf.most_stress_subject AS subject, COUNT(*) AS cnt
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause} AND sf.most_stress_subject IS NOT NULL AND sf.most_stress_subject != ''
+        GROUP BY sf.most_stress_subject
+        ORDER BY cnt DESC
+        LIMIT 8
+    """, params)
+    rows = cursor.fetchall()
+    hardest_subjects = {
+        'labels': [str(r['subject']) for r in rows],
+        'values': [int(r['cnt']) for r in rows]
+    }
+
+    # 3. Easiest Subjects
+    cursor.execute(f"""
+        SELECT sf.easiest_subject AS subject, COUNT(*) AS cnt
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause} AND sf.easiest_subject IS NOT NULL AND sf.easiest_subject != ''
+        GROUP BY sf.easiest_subject
+        ORDER BY cnt DESC
+        LIMIT 8
+    """, params)
+    rows = cursor.fetchall()
+    easiest_subjects = {
+        'labels': [str(r['subject']) for r in rows],
+        'values': [int(r['cnt']) for r in rows]
+    }
+
+    # 4. Sleep Hours distribution
+    cursor.execute(f"""
+        SELECT sf.sleep_hours AS label, COUNT(*) AS cnt
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause} AND sf.sleep_hours IS NOT NULL AND sf.sleep_hours != ''
+        GROUP BY sf.sleep_hours
+        ORDER BY cnt DESC
+    """, params)
+    rows = cursor.fetchall()
+    sleep_hours = {
+        'labels': [str(r['label']) for r in rows],
+        'values': [int(r['cnt']) for r in rows]
+    }
+
+    # 5. Peak Productivity (best study time)
+    cursor.execute(f"""
+        SELECT sf.best_study_time AS label, COUNT(*) AS cnt
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause} AND sf.best_study_time IS NOT NULL AND sf.best_study_time != ''
+        GROUP BY sf.best_study_time
+        ORDER BY cnt DESC
+    """, params)
+    rows = cursor.fetchall()
+    productivity = {
+        'labels': [str(r['label']) for r in rows],
+        'values': [int(r['cnt']) for r in rows]
+    }
+
+    # 6. Feel fresh after sleep
+    cursor.execute(f"""
+        SELECT sf.feel_fresh AS label, COUNT(*) AS cnt
+        FROM stress_forms sf
+        JOIN students s ON sf.student_id = s.id
+        {where_clause} AND sf.feel_fresh IS NOT NULL AND sf.feel_fresh != ''
+        GROUP BY sf.feel_fresh
+        ORDER BY cnt DESC
+    """, params)
+    rows = cursor.fetchall()
+    fresh_sleep = {
+        'labels': [str(r['label']) for r in rows],
+        'values': [int(r['cnt']) for r in rows]
+    }
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'stress_dashboard.html',
+        college=college,
+        stress_stats=stress_stats,
+        hardest_subjects=hardest_subjects,
+        easiest_subjects=easiest_subjects,
+        sleep_hours=sleep_hours,
+        productivity=productivity,
+        fresh_sleep=fresh_sleep
+    )
+
 @app.route('/manage_periods')
 def manage_periods():
     college_id = session.get('college_id')
     if not college_id:
         return redirect(url_for('home'))
+
+    admin_branch = session.get('admin_branch')
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -1065,13 +1305,21 @@ def manage_periods():
     # Get distinct branches configured in subjects
     cursor.execute("SELECT DISTINCT branch FROM subjects WHERE college_id = %s", (college_id,))
     branches = [row['branch'] for row in cursor.fetchall() if row['branch']]
+
+    # Query sections
+    if admin_branch:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY section_name", (college_id, admin_branch))
+    else:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+    sections = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
     success = session.pop('gen_success', None)
     error = session.pop('gen_error', None)
 
-    return render_template('manage_periods.html', college=college, branches=branches, success=success, error=error)
+    return render_template('manage_periods.html', college=college, branches=branches, sections=sections, success=success, error=error)
 
 # ----------------- AI ENGINE: TIMETABLE GENERATION -----------------
 

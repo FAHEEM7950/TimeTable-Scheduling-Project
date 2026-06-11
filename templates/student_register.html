@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 
     <header>
         <h1>{{ college.college_name }} Portal</h1>
@@ -73,7 +74,15 @@
 
                     <div class="form-group">
                         <label for="section_name">Section</label>
-                        <input type="text" id="section_name" name="section_name" class="form-control" placeholder="e.g. A" required>
+                        <select id="section_name" name="section_name" class="form-control" required>
+                            {% if sections %}
+                                {% for sec in sections %}
+                                    <option value="{{ sec.section_name }}">{{ sec.branch }} — Section {{ sec.section_name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled selected>No sections available — contact admin</option>
+                            {% endif %}
+                        </select>
                     </div>
 
                     <div class="form-group" style="grid-column: span 2;">
@@ -86,6 +95,5 @@
             </form>
         </div>
     </main>
-
 </body>
 </html>

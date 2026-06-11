@@ -7,9 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
 </head>
 <body>
-    <script>
-        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
-    </script>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 
     {% set is_local = session.get('local_admin_id') is not none %}
     {% set dash_url = '/admin_dashboard' if is_local else '/college_dashboard' %}
@@ -19,7 +17,6 @@
         <h1>{{ college.college_name }} Admin</h1>
         <div class="nav-links">
             <a href="{{ dash_url }}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
-            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -32,6 +29,8 @@
                 <li><a href="/manage_periods" class="sidebar-link active">Manage Periods & Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
+                <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
                 {% if not is_local %}
                     <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
                 {% endif %}
@@ -76,9 +75,13 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="section_name">Select Section</label>
                         <select id="section_name" name="section_name" class="form-control" required>
-                            <option value="A">Section A</option>
-                            <option value="B">Section B</option>
-                            <option value="C">Section C</option>
+                            {% if sections %}
+                                {% for sec in sections %}
+                                    <option value="{{ sec.section_name }}">{{ sec.branch }} — Section {{ sec.section_name }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="" disabled>No sections configured — go to Manage Sections first</option>
+                            {% endif %}
                         </select>
                     </div>
 
@@ -117,15 +120,5 @@
 
         </main>
     </div>
-
-    <script>
-        const btn = document.getElementById('theme-toggle');
-        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
-        function toggleTheme() {
-            const isL = document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', isL ? 'light' : 'dark');
-            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
-        }
-    </script>
 </body>
 </html>
