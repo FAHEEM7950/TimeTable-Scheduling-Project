@@ -75,12 +75,13 @@
                     <div class="form-group">
                         <label for="section_name">Section</label>
                         <select id="section_name" name="section_name" class="form-control" required>
+                            <option value="" disabled selected>-- Select Section --</option>
                             {% if sections %}
                                 {% for sec in sections %}
-                                    <option value="{{ sec.section_name }}">{{ sec.branch }} — Section {{ sec.section_name }}</option>
+                                    <option value="{{ sec.section_name }}" data-branch="{{ sec.branch|upper }}" data-year="{{ sec.year_level }}">
+                                        Section {{ sec.section_name }}
+                                    </option>
                                 {% endfor %}
-                            {% else %}
-                                <option value="" disabled selected>No sections available — contact admin</option>
                             {% endif %}
                         </select>
                     </div>
@@ -95,5 +96,60 @@
             </form>
         </div>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const branchInput = document.getElementById('branch');
+            const yearSelect = document.getElementById('year_level');
+            const sectionSelect = document.getElementById('section_name');
+            
+            // Store all original section options
+            const originalOptions = Array.from(sectionSelect.options);
+            
+            function filterSections() {
+                const selectedBranch = branchInput.value.trim().toUpperCase();
+                const selectedYear = yearSelect.value;
+                
+                // Clear current options
+                sectionSelect.innerHTML = '';
+                
+                // Re-add matching options
+                let matchedCount = 0;
+                
+                // First option is the placeholder
+                const placeholder = originalOptions[0];
+                sectionSelect.appendChild(placeholder);
+                
+                originalOptions.forEach((opt, idx) => {
+                    if (idx === 0) return; // skip placeholder
+                    
+                    const optBranch = opt.getAttribute('data-branch') || '';
+                    const optYear = opt.getAttribute('data-year') || '';
+                    
+                    if (optBranch === selectedBranch && optYear === selectedYear) {
+                        sectionSelect.appendChild(opt.cloneNode(true));
+                        matchedCount++;
+                    }
+                });
+                
+                if (matchedCount === 0) {
+                    const noOpt = document.createElement('option');
+                    noOpt.value = "";
+                    noOpt.textContent = "No sections configured for " + (selectedBranch || 'this branch') + " Year " + selectedYear;
+                    noOpt.disabled = true;
+                    noOpt.selected = true;
+                    sectionSelect.appendChild(noOpt);
+                } else {
+                    placeholder.selected = true;
+                }
+            }
+            
+            branchInput.addEventListener('input', filterSections);
+            yearSelect.addEventListener('change', filterSections);
+            
+            // Initial filter on load
+            filterSections();
+        });
+    </script>
 </body>
 </html>

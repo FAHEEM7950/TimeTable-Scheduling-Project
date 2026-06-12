@@ -50,7 +50,7 @@
             <!-- Add Section Form Card -->
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2.5rem;">
                 <h3 style="margin-bottom: 1.5rem; color: var(--accent);">Configure New Section</h3>
-                <form method="POST" action="/manage_sections" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+                <form method="POST" action="/manage_sections" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; align-items: flex-end;">
                     
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="branch">Branch / Dept</label>
@@ -59,6 +59,16 @@
                         {% else %}
                             <input type="text" id="branch" name="branch" class="form-control" placeholder="e.g. CSE" required>
                         {% endif %}
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="year_level">Year Level</label>
+                        <select id="year_level" name="year_level" class="form-control" required>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
@@ -78,6 +88,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Branch</th>
+                            <th>Year Level</th>
                             <th>Section Name</th>
                             <th>Action</th>
                         </tr>
@@ -88,6 +99,7 @@
                                 <tr>
                                     <td>{{ sec.id }}</td>
                                     <td><strong>{{ sec.branch }}</strong></td>
+                                    <td>{{ sec.year_level }} Year</td>
                                     <td><span style="background: rgba(59, 130, 246, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Section {{ sec.section_name }}</span></td>
                                     <td>
                                         <form method="POST" action="/delete_section/{{ sec.id }}" style="display:inline;" onsubmit="return confirm('Deleting a section will not delete timetables or students, but they will no longer be selectable in forms. Continue?')">
@@ -98,7 +110,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="4" style="text-align: center; color: var(--text-secondary);">No sections configured yet.</td>
+                                <td colspan="5" style="text-align: center; color: var(--text-secondary);">No sections configured yet.</td>
                             </tr>
                         {% endif %}
                     </tbody>

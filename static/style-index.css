@@ -3,6 +3,7 @@
 :root {
     --bg-primary: #0a0f1d;
     --bg-secondary: #131c31;
+    --header-bg: rgba(19, 28, 49, 0.85);
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
     --accent: #3b82f6;
@@ -18,6 +19,7 @@
 .light-mode {
     --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
+    --header-bg: rgba(248, 250, 252, 0.85);
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --glass-bg: rgba(0, 0, 0, 0.02);
@@ -72,7 +74,7 @@ body {
 
 /* Header & Navigation */
 header {
-    background: rgba(19, 28, 49, 0.8);
+    background: var(--header-bg);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--glass-border);
     padding: 1rem 2rem;

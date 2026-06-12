@@ -6,6 +6,78 @@
     <title>Verify OTP - {{ college.college_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <style>
+        /* Simulated SMS Push Notification styling */
+        .sms-push-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            width: calc(100% - 40px);
+            max-width: 360px;
+            animation: smsSlideIn 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        .sms-push-card {
+            background: #1e293b;
+            color: #f8fafc;
+            border-radius: 16px;
+            padding: 1.2rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .sms-push-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sms-push-app {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .sms-push-app-icon {
+            font-size: 1rem;
+        }
+
+        .sms-push-body {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .sms-push-body strong.otp-code {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 0.15rem 0.4rem;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-family: monospace;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            margin: 0 0.2rem;
+        }
+
+        @keyframes smsSlideIn {
+            from {
+                transform: translateY(-100px) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -19,7 +91,7 @@
     <main style="display: flex; align-items: center; justify-content: center; flex-grow: 1;">
         <div class="form-container">
             <h2 class="form-title">Enter OTP Code</h2>
-            <p class="form-subtitle">We have sent a 4-digit code to your phone. (Please check the terminal console logs to find the OTP code)</p>
+            <p class="form-subtitle">We have simulated sending a 4-digit verification code to your registered mobile number.</p>
 
             {% if error %}
                 <div class="message-box message-error">{{ error }}</div>
@@ -28,13 +100,44 @@
             <form method="POST">
                 <div class="form-group">
                     <label for="otp">4-Digit Code</label>
-                    <input type="text" id="otp" name="otp" class="form-control" placeholder="1234" maxlength="4" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em;" required>
+                    <input type="text" id="otp" name="otp" class="form-control" placeholder="1234" maxlength="4" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em;" required autocomplete="off">
                 </div>
 
                 <button type="submit" class="btn" style="margin-top: 1rem;">Verify & Login</button>
             </form>
         </div>
     </main>
+
+    <!-- Simulated SMS Notification overlay (for developer convenience & real representation) -->
+    {% if session.get('otp') %}
+    <div class="sms-push-container" id="smsNotification">
+        <div class="sms-push-card">
+            <div class="sms-push-header">
+                <div class="sms-push-app">
+                    <span class="sms-push-app-icon">💬</span>
+                    <span>Messages</span>
+                </div>
+                <span>now</span>
+            </div>
+            <div class="sms-push-body">
+                Incoming message from <strong>College Portal SMS Gateway</strong>:<br>
+                "Your OTP security code is <strong class="otp-code">{{ session.get('otp') }}</strong>. Please enter this code to verify your login."
+            </div>
+        </div>
+    </div>
+    <script>
+        // Auto-dismiss simulated notification after 15 seconds
+        setTimeout(() => {
+            const sms = document.getElementById('smsNotification');
+            if (sms) {
+                sms.style.transition = 'all 0.5s ease';
+                sms.style.opacity = '0';
+                sms.style.transform = 'translateY(-20px) scale(0.9)';
+                setTimeout(() => sms.remove(), 500);
+            }
+        }, 15000);
+    </script>
+    {% endif %}
 
 </body>
 </html>

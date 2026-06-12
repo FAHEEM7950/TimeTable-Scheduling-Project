@@ -1,8 +1,9 @@
-CREATE DATABASE IF NOT EXISTS timetable_db;
+DROP DATABASE IF EXISTS timetable_db;
+CREATE DATABASE timetable_db;
 USE timetable_db;
 
 -- 1. Colleges Table
-CREATE TABLE IF NOT EXISTS colleges (
+CREATE TABLE colleges (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_name VARCHAR(255) NOT NULL,
     college_code VARCHAR(100) NOT NULL UNIQUE,
@@ -11,8 +12,8 @@ CREATE TABLE IF NOT EXISTS colleges (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Developers Table (REQUIRED — missing from your schema)
-CREATE TABLE IF NOT EXISTS developers (
+-- 2. Developers Table
+CREATE TABLE developers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(150) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
@@ -20,29 +21,30 @@ CREATE TABLE IF NOT EXISTS developers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Local College Admins Table (FIXED — added `branch` column)
-CREATE TABLE IF NOT EXISTS admin (
+-- 3. Local College Admins Table
+CREATE TABLE admin (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     username VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     college_name VARCHAR(255),
-    branch VARCHAR(100),          -- REQUIRED: used by local admin dashboard
+    branch VARCHAR(100),
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );
 
 -- 4. Sections Table
-CREATE TABLE IF NOT EXISTS sections (
+CREATE TABLE sections (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     branch VARCHAR(100) NOT NULL,
+    year_level INT NOT NULL,
     section_name VARCHAR(50) NOT NULL,
-    UNIQUE KEY unique_section (college_id, branch, section_name),
+    UNIQUE KEY unique_section (college_id, branch, year_level, section_name),
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );
 
 -- 5. Students Table
-CREATE TABLE IF NOT EXISTS students (
+CREATE TABLE students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     full_name VARCHAR(255) NOT NULL,
@@ -58,7 +60,7 @@ CREATE TABLE IF NOT EXISTS students (
 );
 
 -- 6. Faculty Table
-CREATE TABLE IF NOT EXISTS faculty (
+CREATE TABLE faculty (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     employee_id VARCHAR(100) NOT NULL,
@@ -75,7 +77,7 @@ CREATE TABLE IF NOT EXISTS faculty (
 );
 
 -- 7. Subjects Table
-CREATE TABLE IF NOT EXISTS subjects (
+CREATE TABLE subjects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     subject_code VARCHAR(50) NOT NULL,
@@ -87,8 +89,8 @@ CREATE TABLE IF NOT EXISTS subjects (
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );
 
--- 8. Student Stress Forms Table (stress_score included from the start)
-CREATE TABLE IF NOT EXISTS stress_forms (
+-- 8. Student Stress Forms Table
+CREATE TABLE stress_forms (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     sleep_hours VARCHAR(50),
@@ -107,13 +109,13 @@ CREATE TABLE IF NOT EXISTS stress_forms (
     need_more_breaks VARCHAR(100),
     scheduling_suggestions TEXT,
     stress_comments TEXT,
-    stress_score INT DEFAULT 0,   -- included directly, no ALTER needed
+    stress_score INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
 -- 9. Faculty Absence Requests Table
-CREATE TABLE IF NOT EXISTS absence_requests (
+CREATE TABLE absence_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     faculty_id INT NOT NULL,
     college_id INT NOT NULL,
@@ -126,13 +128,14 @@ CREATE TABLE IF NOT EXISTS absence_requests (
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );
 
--- 10. Timetable Table (ai_reason included from the start)
-CREATE TABLE IF NOT EXISTS timetable (
+-- 10. Timetable Table
+CREATE TABLE timetable (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     branch VARCHAR(100) NOT NULL,
     year_level INT NOT NULL,
     semester INT NOT NULL,
+    section_name VARCHAR(50) NOT NULL,
     day_name VARCHAR(50) NOT NULL,
     period1 VARCHAR(255) DEFAULT 'FREE',
     period2 VARCHAR(255) DEFAULT 'FREE',
@@ -142,12 +145,13 @@ CREATE TABLE IF NOT EXISTS timetable (
     period6 VARCHAR(255) DEFAULT 'FREE',
     period7 VARCHAR(255) DEFAULT 'FREE',
     published INT DEFAULT 0,
-    ai_reason TEXT,               -- included directly, no ALTER needed
+    ai_reason TEXT,
+    UNIQUE KEY unique_timetable_slot (college_id, branch, year_level, semester, section_name, day_name),
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );
 
 -- 11. Student Feedback Table
-CREATE TABLE IF NOT EXISTS feedback (
+CREATE TABLE feedback (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     roll_no VARCHAR(100) NOT NULL,
@@ -157,7 +161,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 -- 12. Stress Reports Summary Table
-CREATE TABLE IF NOT EXISTS stress_reports (
+CREATE TABLE stress_reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     branch VARCHAR(100),
@@ -175,7 +179,7 @@ CREATE TABLE IF NOT EXISTS stress_reports (
 );
 
 -- 13. Subject Stress Stats Table
-CREATE TABLE IF NOT EXISTS subject_stress_stats (
+CREATE TABLE subject_stress_stats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT NOT NULL,
     branch VARCHAR(100),
@@ -187,7 +191,7 @@ CREATE TABLE IF NOT EXISTS subject_stress_stats (
 );
 
 -- 14. Dashboard Stats Table
-CREATE TABLE IF NOT EXISTS dashboard_stats (
+CREATE TABLE dashboard_stats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     college_id INT,
     total_students INT DEFAULT 0,

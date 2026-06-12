@@ -73,25 +73,25 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="section_name">Select Section</label>
-                        <select id="section_name" name="section_name" class="form-control" required>
-                            {% if sections %}
-                                {% for sec in sections %}
-                                    <option value="{{ sec.section_name }}">{{ sec.branch }} — Section {{ sec.section_name }}</option>
-                                {% endfor %}
-                            {% else %}
-                                <option value="" disabled>No sections configured — go to Manage Sections first</option>
-                            {% endif %}
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
                         <label for="year_level">Year</label>
                         <select id="year_level" name="year_level" class="form-control" required>
                             <option value="1">1st Year</option>
                             <option value="2">2nd Year</option>
                             <option value="3">3rd Year</option>
                             <option value="4">4th Year</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="section_name">Select Section</label>
+                        <select id="section_name" name="section_name" class="form-control" required>
+                            {% if sections %}
+                                {% for sec in sections %}
+                                    <option value="{{ sec.section_name }}" data-branch="{{ sec.branch|upper }}" data-year="{{ sec.year_level }}">
+                                        Section {{ sec.section_name }}
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
                         </select>
                     </div>
 
@@ -120,5 +120,50 @@
 
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const branchSelect = document.getElementById('branch');
+            const yearSelect = document.getElementById('year_level');
+            const sectionSelect = document.getElementById('section_name');
+            
+            // Store all original section options
+            const originalOptions = Array.from(sectionSelect.options);
+            
+            function filterSections() {
+                const selectedBranch = branchSelect.value.trim().toUpperCase();
+                const selectedYear = yearSelect.value;
+                
+                sectionSelect.innerHTML = '';
+                
+                let matchedCount = 0;
+                
+                originalOptions.forEach(opt => {
+                    const optBranch = opt.getAttribute('data-branch') || '';
+                    const optYear = opt.getAttribute('data-year') || '';
+                    
+                    if (optBranch === selectedBranch && optYear === selectedYear) {
+                        sectionSelect.appendChild(opt.cloneNode(true));
+                        matchedCount++;
+                    }
+                });
+                
+                if (matchedCount === 0) {
+                    const noOpt = document.createElement('option');
+                    noOpt.value = "";
+                    noOpt.textContent = "No sections configured — configure in Manage Sections first";
+                    noOpt.disabled = true;
+                    noOpt.selected = true;
+                    sectionSelect.appendChild(noOpt);
+                }
+            }
+            
+            branchSelect.addEventListener('change', filterSections);
+            yearSelect.addEventListener('change', filterSections);
+            
+            // Initial run
+            filterSections();
+        });
+    </script>
 </body>
 </html>

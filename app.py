@@ -20,6 +20,30 @@ def get_db_connection():
 def inject_context():
     return dict(session=session)
 
+# Twilio SMS Send Helper (Configurable by admin)
+def send_sms_otp(phone, otp):
+    TWILIO_ACCOUNT_SID = ""  # Enter Twilio Account SID here
+    TWILIO_AUTH_TOKEN = ""   # Enter Twilio Auth Token here
+    TWILIO_PHONE_NUMBER = "" # Enter Twilio Phone Number here
+
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
+        try:
+            from twilio.rest import Client
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            client.messages.create(
+                body=f"Your College Portal Verification Code is {otp}",
+                from_=TWILIO_PHONE_NUMBER,
+                to=phone
+            )
+            print(f"Twilio SMS sent to {phone}!")
+            return True
+        except Exception as e:
+            print(f"Twilio SMS Error: {e}")
+            return False
+    else:
+        print(f"Twilio SMS credentials not set. Simulated SMS OTP: {otp}")
+        return False
+
 # ----------------- HOME & PORTALS -----------------
 
 @app.route('/')
@@ -476,6 +500,9 @@ def student_register():
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
+    # Fetch sections to allow student selection
+    cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, year_level, section_name", (college_id,))
+    sections = cursor.fetchall()
     cursor.close()
     conn.close()
 
@@ -502,12 +529,12 @@ def student_register():
             conn.commit()
             return redirect(url_for('student_login', college_id=col_id))
         except mysql.connector.Error as err:
-            return render_template('student_register.html', college=college, error=f"Registration failed: {err.msg}")
+            return render_template('student_register.html', college=college, sections=sections, error=f"Registration failed: {err.msg}")
         finally:
             cursor.close()
             conn.close()
 
-    return render_template('student_register.html', college=college)
+    return render_template('student_register.html', college=college, sections=sections)
 
 @app.route('/student_login', methods=['GET', 'POST'])
 def student_login():
@@ -781,6 +808,9 @@ def faculty_login():
             session['otp'] = str(otp)
             session['otp_phone'] = phone
             session['otp_college_id'] = col_id
+            
+            # Call Twilio helper
+            send_sms_otp(phone, str(otp))
             
             print("====================================")
             print(f" OTP SECURITY: Code is {otp} ")
@@ -1089,6 +1119,7 @@ def manage_sections():
 
     if request.method == 'POST':
         branch = admin_branch if admin_branch else request.form.get('branch', '').upper().strip()
+        year_level = int(request.form.get('year_level', 1))
         section_name = request.form.get('section_name', '').upper().strip()
 
         if not branch or not section_name:
@@ -1097,26 +1128,26 @@ def manage_sections():
             try:
                 # Check for duplicate
                 cursor.execute(
-                    "SELECT * FROM sections WHERE college_id = %s AND branch = %s AND section_name = %s",
-                    (college_id, branch, section_name)
+                    "SELECT * FROM sections WHERE college_id = %s AND branch = %s AND year_level = %s AND section_name = %s",
+                    (college_id, branch, year_level, section_name)
                 )
                 if cursor.fetchone():
-                    error = f"Section '{section_name}' already exists for branch '{branch}'."
+                    error = f"Section '{section_name}' already exists for branch '{branch}' Year {year_level}."
                 else:
                     cursor.execute(
-                        "INSERT INTO sections (college_id, branch, section_name) VALUES (%s, %s, %s)",
-                        (college_id, branch, section_name)
+                        "INSERT INTO sections (college_id, branch, year_level, section_name) VALUES (%s, %s, %s, %s)",
+                        (college_id, branch, year_level, section_name)
                     )
                     conn.commit()
-                    success = f"Section '{section_name}' successfully added for branch '{branch}'."
+                    success = f"Section '{section_name}' successfully added for branch '{branch}' Year {year_level}."
             except mysql.connector.Error as err:
                 error = f"Failed to add section: {err.msg}"
 
     # Get sections to display
     if admin_branch:
-        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY section_name", (college_id, admin_branch))
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY year_level, section_name", (college_id, admin_branch))
     else:
-        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, year_level, section_name", (college_id,))
     sections = cursor.fetchall()
 
     cursor.close()
