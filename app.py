@@ -472,7 +472,14 @@ def manage_subjects():
     success = locals().get('success_msg')
     error = locals().get('error_msg')
 
-    return render_template('manage_subjects.html', college=college, subjects=subjects, success=success, error=error)
+    return render_template(
+    'manage_subjects.html',
+    college=college,
+    admin_branch=admin_branch,
+    subjects=subjects,
+    success=success,
+    error=error
+)
 
 @app.route('/delete_subject/<int:subject_id>', methods=['POST'])
 def delete_subject(subject_id):
@@ -1008,7 +1015,7 @@ def publish_timetable():
 
     success = session.pop('publish_success', None)
 
-    return render_template('publish_timetable.html', college=college, schedules=schedules, success=success)
+    return render_template('publish_timetable.html', college=college, admin_branch=admin_branch,schedules=schedules, success=success)
 
 @app.route('/toggle_publish_timetable', methods=['POST'])
 def toggle_publish_timetable():
@@ -1099,6 +1106,7 @@ def admin_view_timetable():
         'admin_view_timetable.html',
         college=college,
         branches=branches,
+        admin_branch=admin_branch,
         sections=sections,
         selected_branch=selected_branch,
         selected_section=selected_section,
@@ -1162,12 +1170,13 @@ def manage_sections():
     conn.close()
 
     return render_template(
-        'manage_sections.html',
-        college=college,
-        sections=sections,
-        success=success,
-        error=error
-    )
+    'manage_sections.html',
+    college=college,
+    admin_branch=admin_branch,
+    sections=sections,
+    success=success,
+    error=error
+)
 
 @app.route('/delete_section/<int:section_id>', methods=['POST'])
 def delete_section(section_id):
@@ -1319,6 +1328,7 @@ def stress_dashboard():
     return render_template(
         'stress_dashboard.html',
         college=college,
+        admin_branch=admin_branch,
         stress_stats=stress_stats,
         hardest_subjects=hardest_subjects,
         easiest_subjects=easiest_subjects,
@@ -1358,7 +1368,7 @@ def manage_periods():
     success = session.pop('gen_success', None)
     error = session.pop('gen_error', None)
 
-    return render_template('manage_periods.html', college=college, branches=branches, sections=sections, success=success, error=error)
+    return  render_template('manage_periods.html', college=college, admin_branch=admin_branch,branches=branches, sections=sections, success=success, error=error)
 
 # ----------------- AI ENGINE: TIMETABLE GENERATION -----------------
 

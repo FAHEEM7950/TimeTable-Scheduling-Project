@@ -8,12 +8,9 @@
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 <body>
-    <script>
-        if (localStorage.getItem('theme') === 'light') { document.body.classList.add('light-mode'); }
-    </script>
 
     <header>
-        <h1>{{ college.college_name }} Admin</h1>
+        <h1>{{ college.college_name }} - {{ admin.branch }} ADMIN</h1>
         <div class="nav-links">
             <span style="color: var(--text-secondary); margin-right: 1rem;">Logged in as: <strong>{{ admin.branch }} Admin ({{ admin.username }})</strong></span>
             <a href="/admin_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
@@ -58,7 +55,7 @@
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
                 <h3 style="margin-bottom: 1rem; color: var(--accent);">Departmental Control</h3>
                 <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
-                    As the **{{ admin.branch }} Admin**, you can add subjects, schedule periods, and generate/publish timetables specifically for the **{{ admin.branch }}** branch. Use the menu on the left to get started.
+                    As the <strong>{{ admin.branch }} Admin</strong>, you can add subjects, schedule periods, and generate/publish timetables specifically for the <strong>{{ admin.branch }}</strong> branch. Use the menu on the left to get started.
                 </p>
                 <div style="display: flex; gap: 1rem;">
                     <a href="/manage_periods" class="btn" style="width: auto;">Build {{ admin.branch }} Timetable</a>
