@@ -102,6 +102,7 @@
             const branchInput = document.getElementById('branch');
             const yearSelect = document.getElementById('year_level');
             const sectionSelect = document.getElementById('section_name');
+            const semesterSelect = document.getElementById('semester');
             
             // Store all original section options
             const originalOptions = Array.from(sectionSelect.options);
@@ -144,11 +145,33 @@
                 }
             }
             
-            branchInput.addEventListener('input', filterSections);
-            yearSelect.addEventListener('change', filterSections);
+            function updateSemesters() {
+                const year = parseInt(yearSelect.value);
+                const semA = (year - 1) * 2 + 1;
+                const semB = (year - 1) * 2 + 2;
+                
+                semesterSelect.innerHTML = '';
+                
+                const optA = document.createElement('option');
+                optA.value = semA;
+                optA.textContent = "Semester " + semA;
+                semesterSelect.appendChild(optA);
+                
+                const optB = document.createElement('option');
+                optB.value = semB;
+                optB.textContent = "Semester " + semB;
+                semesterSelect.appendChild(optB);
+            }
             
-            // Initial filter on load
+            branchInput.addEventListener('input', filterSections);
+            yearSelect.addEventListener('change', function() {
+                filterSections();
+                updateSemesters();
+            });
+            
+            // Initial run on load
             filterSections();
+            updateSemesters();
         });
     </script>
 </body>

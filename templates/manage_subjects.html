@@ -154,6 +154,32 @@
             localStorage.setItem('theme', isL ? 'light' : 'dark');
             if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const yearSelect = document.getElementById('year_level');
+            const semesterSelect = document.getElementById('semester');
+
+            function updateSemesters() {
+                const year = parseInt(yearSelect.value);
+                const semA = (year - 1) * 2 + 1;
+                const semB = (year - 1) * 2 + 2;
+                
+                semesterSelect.innerHTML = '';
+                
+                const optA = document.createElement('option');
+                optA.value = semA;
+                optA.textContent = "Semester " + semA;
+                semesterSelect.appendChild(optA);
+                
+                const optB = document.createElement('option');
+                optB.value = semB;
+                optB.textContent = "Semester " + semB;
+                semesterSelect.appendChild(optB);
+            }
+
+            yearSelect.addEventListener('change', updateSemesters);
+            updateSemesters(); // Initial run on load
+        });
     </script>
 </body>
 </html>

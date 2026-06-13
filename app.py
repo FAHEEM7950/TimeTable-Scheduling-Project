@@ -11,7 +11,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Ramakrishna@2007",
+        password="@Faheem7950",
         database="timetable_db"
     )
 
@@ -1048,8 +1048,16 @@ def admin_view_timetable():
 
     selected_branch = admin_branch if admin_branch else request.args.get('branch', '')
     selected_section = request.args.get('section_name', '')
-    selected_year = request.args.get('year_level', '1')
-    selected_semester = request.args.get('semester', '1')
+    selected_year = int(request.args.get('year_level', '1'))
+    
+    valid_sem_a = (selected_year - 1) * 2 + 1
+    valid_sem_b = (selected_year - 1) * 2 + 2
+    
+    selected_semester = request.args.get('semester', '')
+    if not selected_semester or int(selected_semester) not in (valid_sem_a, valid_sem_b):
+        selected_semester = valid_sem_a
+    else:
+        selected_semester = int(selected_semester)
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -1063,9 +1071,9 @@ def admin_view_timetable():
 
     # Get sections
     if selected_branch:
-        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY section_name", (college_id, selected_branch))
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s AND year_level = %s ORDER BY section_name", (college_id, selected_branch, int(selected_year)))
     else:
-        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, section_name", (college_id,))
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND year_level = %s ORDER BY branch, section_name", (college_id, int(selected_year)))
     sections = cursor.fetchall()
 
     # Fallback to first available section if none is selected

@@ -64,8 +64,6 @@
                             {% for sec in sections %}
                                 <option value="{{ sec.section_name }}" {% if selected_section == sec.section_name %}selected{% endif %}>{{ sec.branch }} — Section {{ sec.section_name }}</option>
                             {% endfor %}
-                        {% else %}
-                            <option value="{{ selected_section }}" selected>{{ selected_section }}</option>
                         {% endif %}
                     </select>
                 </div>
@@ -83,8 +81,10 @@
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <label for="semester">Semester:</label>
                     <select id="semester" name="semester" onchange="this.form.submit()">
-                        <option value="1" {% if selected_semester == 1 %}selected{% endif %}>Semester 1</option>
-                        <option value="2" {% if selected_semester == 2 %}selected{% endif %}>Semester 2</option>
+                        {% set sem_a = (selected_year - 1) * 2 + 1 %}
+                        {% set sem_b = (selected_year - 1) * 2 + 2 %}
+                        <option value="{{ sem_a }}" {% if selected_semester == sem_a %}selected{% endif %}>Semester {{ sem_a }}</option>
+                        <option value="{{ sem_b }}" {% if selected_semester == sem_b %}selected{% endif %}>Semester {{ sem_b }}</option>
                     </select>
                 </div>
             </form>
