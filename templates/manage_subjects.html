@@ -94,7 +94,16 @@
                     </div>
 
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="periods_per_week">Weekly Periods Needed</label>
+                        <label for="section_name">Section</label>
+                        <select id="section_name" name="section_name" class="form-control" required>
+                            {% for sec in sections %}
+                                <option value="{{ sec.section_name }}" data-year="{{ sec.year_level }}">{{ sec.section_name }} (Year {{ sec.year_level }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="periods_per_week">Weekly Periods</label>
                         <input type="number" id="periods_per_week" name="periods_per_week" class="form-control" min="1" max="10" value="3" required>
                     </div>
 
@@ -113,6 +122,7 @@
                             <th>Branch</th>
                             <th>Year</th>
                             <th>Semester</th>
+                            <th>Section</th>
                             <th>Periods / Week</th>
                             <th>Action</th>
                         </tr>
@@ -126,6 +136,7 @@
                                     <td><span style="background: rgba(59, 130, 246, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ sub.branch }}</span></td>
                                     <td>Year {{ sub.year_level }}</td>
                                     <td>Semester {{ sub.semester }}</td>
+                                    <td><strong>{{ sub.section_name }}</strong></td>
                                     <td>{{ sub.periods_per_week }} Periods</td>
                                     <td>
                                         <form method="POST" action="/delete_subject/{{ sub.id }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this subject?')">
@@ -136,7 +147,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" style="text-align: center; color: var(--text-secondary);">No subjects registered yet for this college.</td>
+                                <td colspan="8" style="text-align: center; color: var(--text-secondary);">No subjects registered yet for this college.</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -158,6 +169,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const yearSelect = document.getElementById('year_level');
             const semesterSelect = document.getElementById('semester');
+            const sectionSelect = document.getElementById('section_name');
+            const allSections = Array.from(sectionSelect.options);
 
             function updateSemesters() {
                 const year = parseInt(yearSelect.value);
@@ -177,8 +190,30 @@
                 semesterSelect.appendChild(optB);
             }
 
-            yearSelect.addEventListener('change', updateSemesters);
-            updateSemesters(); // Initial run on load
+            function updateSections() {
+                const year = parseInt(yearSelect.value);
+                sectionSelect.innerHTML = '';
+                let matchFound = false;
+                allSections.forEach(opt => {
+                    if (parseInt(opt.getAttribute('data-year')) === year) {
+                        sectionSelect.appendChild(opt.cloneNode(true));
+                        matchFound = true;
+                    }
+                });
+                if (!matchFound) {
+                    const optEmpty = document.createElement('option');
+                    optEmpty.value = "";
+                    optEmpty.textContent = "No Sections for Year " + year;
+                    sectionSelect.appendChild(optEmpty);
+                }
+            }
+
+            yearSelect.addEventListener('change', function() {
+                updateSemesters();
+                updateSections();
+            });
+            updateSemesters();
+            updateSections(); // Initial run on load
         });
     </script>
 </body>

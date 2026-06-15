@@ -85,6 +85,7 @@ CREATE TABLE subjects (
     branch VARCHAR(100) NOT NULL,
     year_level INT NOT NULL,
     semester INT NOT NULL,
+    section_name VARCHAR(50) NOT NULL,
     periods_per_week INT DEFAULT 3,
     FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
 );

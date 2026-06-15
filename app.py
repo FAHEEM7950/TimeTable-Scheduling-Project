@@ -277,30 +277,88 @@ def college_dashboard():
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
 
-    # Get local admins
-    cursor.execute("SELECT * FROM admin WHERE college_id = %s", (college_id,))
-    admins = cursor.fetchall()
+    # Fetch all distinct departments/branches
+    cursor.execute("""
+        SELECT DISTINCT branch FROM (
+            SELECT branch FROM students WHERE college_id = %s
+            UNION
+            SELECT department AS branch FROM faculty WHERE college_id = %s
+            UNION
+            SELECT branch FROM admin WHERE college_id = %s
+            UNION
+            SELECT branch FROM subjects WHERE college_id = %s
+            UNION
+            SELECT branch FROM sections WHERE college_id = %s
+        ) t WHERE branch IS NOT NULL AND branch != ''
+    """, (college_id, college_id, college_id, college_id, college_id))
+    branches = [row['branch'] for row in cursor.fetchall()]
 
-    # Statistics
-    cursor.execute("SELECT COUNT(*) as count FROM faculty WHERE college_id = %s", (college_id,))
-    faculty_count = cursor.fetchone()['count']
+    selected_branch = request.args.get('branch', '').strip().upper()
+    selected_section = request.args.get('section', '').strip().upper()
 
-    cursor.execute("SELECT COUNT(*) as count FROM students WHERE college_id = %s", (college_id,))
-    student_count = cursor.fetchone()['count']
+    sections = []
+    admins = []
+    faculties = []
+    subjects = []
+    timetable = []
+    stress_data = []
+    student_count = 0
 
-    cursor.execute("SELECT COUNT(*) as count FROM subjects WHERE college_id = %s", (college_id,))
-    subject_count = cursor.fetchone()['count']
+    if selected_branch:
+        # Get sections of this department
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY year_level, section_name", (college_id, selected_branch))
+        sections = cursor.fetchall()
+
+        # Get department faculties
+        cursor.execute("SELECT * FROM faculty WHERE college_id = %s AND department = %s ORDER BY full_name", (college_id, selected_branch))
+        faculties = cursor.fetchall()
+
+        # Get local department admins
+        cursor.execute("SELECT * FROM admin WHERE college_id = %s AND branch = %s", (college_id, selected_branch))
+        admins = cursor.fetchall()
+
+        if selected_section:
+            # Count students in this section
+            cursor.execute("SELECT COUNT(*) as count FROM students WHERE college_id = %s AND branch = %s AND section_name = %s", (college_id, selected_branch, selected_section))
+            student_count = cursor.fetchone()['count']
+
+            # Get subjects of this section
+            cursor.execute("SELECT * FROM subjects WHERE college_id = %s AND branch = %s AND section_name = %s ORDER BY subject_code", (college_id, selected_branch, selected_section))
+            subjects = cursor.fetchall()
+
+            # Get published timetable for this section
+            cursor.execute("SELECT * FROM timetable WHERE college_id = %s AND branch = %s AND section_name = %s AND published = 1 ORDER BY FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')", (college_id, selected_branch, selected_section))
+            timetable = cursor.fetchall()
+
+            # Get stress data
+            cursor.execute(
+                """SELECT s.full_name, sf.* FROM stress_forms sf 
+                   JOIN students s ON sf.student_id = s.id 
+                   WHERE s.college_id = %s AND s.branch = %s AND s.section_name = %s""",
+                (college_id, selected_branch, selected_section)
+            )
+            stress_data = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    stats = {
-        'faculty_count': faculty_count,
-        'student_count': student_count,
-        'subject_count': subject_count
-    }
+    selected_tab = request.args.get('tab', 'overview').strip().lower()
 
-    return render_template('college_dashboard.html', college=college, admins=admins, stats=stats)
+    return render_template(
+        'college_dashboard.html',
+        college=college,
+        branches=branches,
+        selected_branch=selected_branch,
+        selected_section=selected_section,
+        selected_tab=selected_tab,
+        sections=sections,
+        admins=admins,
+        faculties=faculties,
+        subjects=subjects,
+        timetable=timetable,
+        stress_data=stress_data,
+        student_count=student_count
+    )
 
 @app.route('/college_logout')
 def college_logout():
@@ -443,13 +501,14 @@ def manage_subjects():
         branch = admin_branch if admin_branch else request.form['branch'].strip().upper()
         year_level = int(request.form['year_level'])
         semester = int(request.form['semester'])
+        section_name = request.form['section_name'].strip().upper()
         periods_per_week = int(request.form['periods_per_week'])
 
         try:
             cursor.execute(
-                """INSERT INTO subjects (college_id, subject_code, subject_name, branch, year_level, semester, periods_per_week) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                (college_id, subject_code, subject_name, branch, year_level, semester, periods_per_week)
+                """INSERT INTO subjects (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week) 
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week)
             )
             conn.commit()
             success_msg = "Subject added successfully!"
@@ -460,11 +519,18 @@ def manage_subjects():
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
 
+    # Fetch sections for dropdown selection
+    if admin_branch:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s AND branch = %s ORDER BY year_level, section_name", (college_id, admin_branch))
+    else:
+        cursor.execute("SELECT * FROM sections WHERE college_id = %s ORDER BY branch, year_level, section_name", (college_id,))
+    sections = cursor.fetchall()
+
     # Filter subjects if local admin
     if admin_branch:
-        cursor.execute("SELECT * FROM subjects WHERE college_id = %s AND branch = %s ORDER BY year_level, semester, subject_code", (college_id, admin_branch))
+        cursor.execute("SELECT * FROM subjects WHERE college_id = %s AND branch = %s ORDER BY year_level, semester, section_name, subject_code", (college_id, admin_branch))
     else:
-        cursor.execute("SELECT * FROM subjects WHERE college_id = %s ORDER BY branch, year_level, semester, subject_code", (college_id,))
+        cursor.execute("SELECT * FROM subjects WHERE college_id = %s ORDER BY branch, year_level, semester, section_name, subject_code", (college_id,))
     subjects = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -473,13 +539,14 @@ def manage_subjects():
     error = locals().get('error_msg')
 
     return render_template(
-    'manage_subjects.html',
-    college=college,
-    admin_branch=admin_branch,
-    subjects=subjects,
-    success=success,
-    error=error
-)
+        'manage_subjects.html',
+        college=college,
+        admin_branch=admin_branch,
+        sections=sections,
+        subjects=subjects,
+        success=success,
+        error=error
+    )
 
 @app.route('/delete_subject/<int:subject_id>', methods=['POST'])
 def delete_subject(subject_id):
@@ -1389,8 +1456,8 @@ def generate_timetable():
 
     # Fetch subjects
     cursor.execute(
-        "SELECT * FROM subjects WHERE college_id = %s AND branch = %s AND year_level = %s AND semester = %s",
-        (college_id, branch, year_level, semester)
+        "SELECT * FROM subjects WHERE college_id = %s AND branch = %s AND year_level = %s AND semester = %s AND section_name = %s",
+        (college_id, branch, year_level, semester, section_name)
     )
     subjects = cursor.fetchall()
 
@@ -1416,12 +1483,20 @@ def generate_timetable():
     stress_stats = {row['most_stress_subject'].lower(): row['count'] for row in cursor.fetchall() if row['most_stress_subject']}
     cursor.close()
 
-    # Sort faculties by experience
+    # Sort faculties by matching priority and experience
     subject_faculty_map = {}
     for sub in subjects:
-        matched_facs = [f for f in faculties if sub['subject_name'].lower() in f['subject_name'].lower() or sub['branch'].lower() in f['department'].lower()]
-        matched_facs.sort(key=lambda x: x['experience_years'], reverse=True)
-        subject_faculty_map[sub['id']] = matched_facs
+        matched_facs = []
+        for f in faculties:
+            # check if subject matches
+            if sub['subject_name'].lower() in f['subject_name'].lower() or f['subject_name'].lower() in sub['subject_name'].lower():
+                matched_facs.append((f, 2))
+            elif sub['branch'].lower() in f['department'].lower() or f['department'].lower() in sub['branch'].lower():
+                matched_facs.append((f, 1))
+        
+        # Sort by priority (highest first) then experience_years (highest first)
+        matched_facs.sort(key=lambda x: (x[1], x[0].get('experience_years', 0)), reverse=True)
+        subject_faculty_map[sub['id']] = [item[0] for item in matched_facs]
 
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     slots_needed = {sub['id']: sub['periods_per_week'] for sub in subjects}
@@ -1450,14 +1525,29 @@ def generate_timetable():
         assigned_fac = fac_list[0]['full_name'] if fac_list else "TBD"
 
         is_stressful = stress_stats.get(sub['subject_name'].lower(), 0) > 0
+        fac_pref_morning = False
+        fac_pref_afternoon = False
+
+        if fac_list:
+            fac_obj = fac_list[0]
+            if fac_obj.get('preferred_morning_subject') and fac_obj['preferred_morning_subject'].lower() in sub['subject_name'].lower():
+                fac_pref_morning = True
+            if fac_obj.get('preferred_afternoon_subject') and fac_obj['preferred_afternoon_subject'].lower() in sub['subject_name'].lower():
+                fac_pref_afternoon = True
+
         scheduled_count = 0
         
         for day in days:
             if scheduled_count >= periods_to_fill:
                 break
             
-            # Stressful subjects get morning slots
-            periods_pool = ['period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7'] if is_stressful else ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
+            # Period placement: stressful or morning preference -> morning slots; afternoon preference -> afternoon slots
+            if fac_pref_morning or is_stressful:
+                periods_pool = ['period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7']
+            elif fac_pref_afternoon:
+                periods_pool = ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
+            else:
+                periods_pool = ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
 
             for period in periods_pool:
                 if schedule[day][period] == 'FREE':
@@ -1532,11 +1622,10 @@ def absence_request():
         cursor.execute("SELECT * FROM faculty WHERE id != %s AND college_id = %s", (faculty_id, college_id))
         other_faculties = cursor.fetchall()
 
-        cursor.execute("SELECT * FROM timetable WHERE college_id = %s", (college_id,))
+        cursor.execute("SELECT * FROM timetable WHERE college_id = %s AND published = 1", (college_id,))
         timetables = cursor.fetchall()
 
         updated_swaps = 0
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
         
         for p_idx in range(start_period, end_period + 1):
             period_col = f'period{p_idx}'
@@ -1547,33 +1636,57 @@ def absence_request():
                     
                     if current_session and absent_faculty['full_name'] in current_session:
                         subj_part = current_session.split(" (")[0]
-                        substitute_found = False
                         
-                        # 1. SAME-DAY SAME-SUBJECT SUBSTITUTE (prioritizing experience)
-                        potential_substitutes = [f for f in other_faculties if absent_faculty['subject_name'].lower() in f['subject_name'].lower() or absent_faculty['department'].lower() in f['department'].lower()]
-                        potential_substitutes.sort(key=lambda x: x['experience_years'], reverse=True)
-
-                        for alt_fac in potential_substitutes:
+                        # Filter faculties in same department
+                        dept_facs = [f for f in other_faculties if absent_faculty['department'].lower() in f['department'].lower()]
+                        
+                        # Find which of these same-department faculties are actually free right now
+                        free_substitutes = []
+                        for alt_fac in dept_facs:
                             chk_conn = get_db_connection()
                             chk_cursor = chk_conn.cursor()
+                            # Check if alt_fac is on leave
                             chk_cursor.execute(
                                 """SELECT COUNT(*) FROM absence_requests 
-                                   WHERE faculty_id = %s AND absent_date = %s AND %s BETWEEN start_period AND end_period""",
+                                   WHERE faculty_id = %s AND absent_date = %s AND %s BETWEEN start_period AND end_period AND status != 'Declined'""",
                                 (alt_fac['id'], absent_date_str, p_idx)
                             )
                             is_absent = chk_cursor.fetchone()[0] > 0
                             
-                            # check if alt_fac is teaching in any section
-                            query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {period_col} LIKE %s"
+                            # Check if alt_fac is teaching in any section in published timetable at this slot
+                            query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {period_col} LIKE %s AND published = 1"
                             chk_cursor.execute(query, (college_id, day_of_week, f"%{alt_fac['full_name']}%"))
                             is_busy = chk_cursor.fetchone()[0] > 0
                             
                             chk_cursor.close()
                             chk_conn.close()
-
+                            
                             if not is_absent and not is_busy:
-                                # Substitute swap
-                                new_session_text = f"{subj_part} ({alt_fac['full_name']})"
+                                free_substitutes.append(alt_fac)
+                        
+                        if free_substitutes:
+                            # Divide into same subject and other subjects
+                            same_subject_facs = []
+                            other_subject_facs = []
+                            
+                            for f in free_substitutes:
+                                if absent_faculty['subject_name'].lower() in f['subject_name'].lower() or f['subject_name'].lower() in absent_faculty['subject_name'].lower():
+                                    same_subject_facs.append(f)
+                                else:
+                                    other_subject_facs.append(f)
+                            
+                            # Sort both groups by experience
+                            same_subject_facs.sort(key=lambda x: x.get('experience_years', 0), reverse=True)
+                            other_subject_facs.sort(key=lambda x: x.get('experience_years', 0), reverse=True)
+                            
+                            substitute = None
+                            if same_subject_facs:
+                                substitute = same_subject_facs[0]
+                            elif other_subject_facs:
+                                substitute = other_subject_facs[0]
+                                
+                            if substitute:
+                                new_session_text = f"{subj_part} ({substitute['full_name']})"
                                 update_conn = get_db_connection()
                                 update_cursor = update_conn.cursor()
                                 update_cursor.execute(
@@ -1583,167 +1696,8 @@ def absence_request():
                                 update_conn.commit()
                                 update_cursor.close()
                                 update_conn.close()
-                                substitute_found = True
                                 updated_swaps += 1
                                 break
-
-                        # 2. NEXT-DAY REVERSE SWAP (Same Subject)
-                        if not substitute_found:
-                            # Search schedules of the same class (branch, year, semester, section) for another day's period
-                            # that has another teacher teaching the same subject or same department
-                            search_conn = get_db_connection()
-                            search_cursor = search_conn.cursor(dictionary=True)
-                            search_cursor.execute(
-                                """SELECT * FROM timetable 
-                                   WHERE college_id = %s AND branch = %s AND section_name = %s AND year_level = %s AND semester = %s""",
-                                (college_id, t_row['branch'], t_row['section_name'], t_row['year_level'], t_row['semester'])
-                            )
-                            class_rows = search_cursor.fetchall()
-                            search_cursor.close()
-                            search_conn.close()
-                            
-                            reverse_done = False
-                            for c_row in class_rows:
-                                if reverse_done:
-                                    break
-                                for p_num in range(1, 8):
-                                    test_col = f'period{p_num}'
-                                    target_sess = c_row[test_col]
-                                    
-                                    # Don't swap on the same leave day
-                                    if c_row['day_name'] == day_of_week:
-                                        continue
-                                        
-                                    if target_sess and target_sess != 'FREE':
-                                        t_subj = target_sess.split(" (")[0]
-                                        t_fac_name = target_sess.split(" (")[1].replace(")", "")
-                                        
-                                        # Let's find this other teacher's faculty record
-                                        fac_conn = get_db_connection()
-                                        fac_cursor = fac_conn.cursor(dictionary=True)
-                                        fac_cursor.execute("SELECT * FROM faculty WHERE full_name = %s AND college_id = %s", (t_fac_name, college_id))
-                                        t_fac = fac_cursor.fetchone()
-                                        fac_cursor.close()
-                                        fac_conn.close()
-                                        
-                                        if t_fac:
-                                            # Verify if t_fac is free on the leave day/period
-                                            chk_conn = get_db_connection()
-                                            chk_cursor = chk_conn.cursor()
-                                            query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {period_col} LIKE %s"
-                                            chk_cursor.execute(query, (college_id, day_of_week, f"%{t_fac_name}%"))
-                                            t_fac_busy = chk_cursor.fetchone()[0] > 0
-                                            chk_cursor.close()
-                                            chk_conn.close()
-                                            
-                                            # Verify if absent faculty is free on the next day at period p_num
-                                            chk_conn = get_db_connection()
-                                            chk_cursor = chk_conn.cursor()
-                                            query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {test_col} LIKE %s"
-                                            chk_cursor.execute(query, (college_id, c_row['day_name'], f"%{absent_faculty['full_name']}%"))
-                                            absent_fac_busy = chk_cursor.fetchone()[0] > 0
-                                            chk_cursor.close()
-                                            chk_conn.close()
-                                            
-                                            if not t_fac_busy and not absent_fac_busy:
-                                                # Reverse swap!
-                                                update_conn = get_db_connection()
-                                                update_cursor = update_conn.cursor()
-                                                
-                                                # Set absent slot to the target session
-                                                update_cursor.execute(
-                                                    f"UPDATE timetable SET {period_col} = %s WHERE id = %s",
-                                                    (target_sess, t_row['id'])
-                                                )
-                                                # Set target slot to the absent session
-                                                update_cursor.execute(
-                                                    f"UPDATE timetable SET {test_col} = %s WHERE id = %s",
-                                                    (current_session, c_row['id'])
-                                                )
-                                                update_conn.commit()
-                                                update_cursor.close()
-                                                update_conn.close()
-                                                
-                                                reverse_done = True
-                                                substitute_found = True
-                                                updated_swaps += 1
-                                                break
-
-                        # 3. NEXT-DAY FREE SLOT SWAP
-                        if not substitute_found:
-                            search_conn = get_db_connection()
-                            search_cursor = search_conn.cursor(dictionary=True)
-                            search_cursor.execute(
-                                """SELECT * FROM timetable 
-                                   WHERE college_id = %s AND branch = %s AND section_name = %s AND year_level = %s AND semester = %s""",
-                                (college_id, t_row['branch'], t_row['section_name'], t_row['year_level'], t_row['semester'])
-                            )
-                            class_rows = search_cursor.fetchall()
-                            search_cursor.close()
-                            search_conn.close()
-                            
-                            swap_done = False
-                            for c_row in class_rows:
-                                if swap_done:
-                                    break
-                                for p_num in range(1, 8):
-                                    test_col = f'period{p_num}'
-                                    if c_row[test_col] == 'FREE' and c_row['day_name'] != day_of_week:
-                                        # Check if absent teacher is free on this next day at period p_num
-                                        chk_conn = get_db_connection()
-                                        chk_cursor = chk_conn.cursor()
-                                        query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {test_col} LIKE %s"
-                                        chk_cursor.execute(query, (college_id, c_row['day_name'], f"%{absent_faculty['full_name']}%"))
-                                        absent_fac_busy = chk_cursor.fetchone()[0] > 0
-                                        chk_cursor.close()
-                                        chk_conn.close()
-                                        
-                                        if not absent_fac_busy:
-                                            # Swap
-                                            update_conn = get_db_connection()
-                                            update_cursor = update_conn.cursor()
-                                            update_cursor.execute(
-                                                f"UPDATE timetable SET {test_col} = %s WHERE id = %s",
-                                                (current_session, c_row['id'])
-                                            )
-                                            update_cursor.execute(
-                                                f"UPDATE timetable SET {period_col} = 'FREE' WHERE id = %s",
-                                                (t_row['id'],)
-                                            )
-                                            update_conn.commit()
-                                            update_cursor.close()
-                                            update_conn.close()
-                                            swap_done = True
-                                            substitute_found = True
-                                            updated_swaps += 1
-                                            break
-
-                        # 4. DIFFERENT GUEST FACULTY/SUBJECT SUBSTITUTE
-                        if not substitute_found:
-                            for guest in other_faculties:
-                                chk_conn = get_db_connection()
-                                chk_cursor = chk_conn.cursor()
-                                # Is guest free today?
-                                query = f"SELECT COUNT(*) FROM timetable WHERE college_id = %s AND day_name = %s AND {period_col} LIKE %s"
-                                chk_cursor.execute(query, (college_id, day_of_week, f"%{guest['full_name']}%"))
-                                guest_busy = chk_cursor.fetchone()[0] > 0
-                                chk_cursor.close()
-                                chk_conn.close()
-                                
-                                if not guest_busy:
-                                    new_session_text = f"{guest['subject_name']} ({guest['full_name']})"
-                                    update_conn = get_db_connection()
-                                    update_cursor = update_conn.cursor()
-                                    update_cursor.execute(
-                                        f"UPDATE timetable SET {period_col} = %s WHERE id = %s",
-                                        (new_session_text, t_row['id'])
-                                    )
-                                    update_conn.commit()
-                                    update_cursor.close()
-                                    update_conn.close()
-                                    substitute_found = True
-                                    updated_swaps += 1
-                                    break
         
         status_text = 'Swapped' if updated_swaps > 0 else 'Declined'
         cursor.execute(

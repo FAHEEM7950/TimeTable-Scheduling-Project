@@ -40,87 +40,229 @@
         <div class="sidebar">
             <h3 class="sidebar-title">Navigation</h3>
             <ul class="sidebar-menu">
-                <li><a href="/college_dashboard" class="sidebar-link active">Overview</a></li>
-                <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
-                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
-                <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
-                <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
-                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
-                <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
-                <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+                {% if selected_branch and selected_section %}
+                    <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=overview" class="sidebar-link {% if selected_tab == 'overview' %}active{% endif %}">Overview</a></li>
+                    <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=timetable" class="sidebar-link {% if selected_tab == 'timetable' %}active{% endif %}">View Timetable</a></li>
+                    <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=stress" class="sidebar-link {% if selected_tab == 'stress' %}active{% endif %}">Stress Analysis</a></li>
+                    <li><hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 1rem 0;"></li>
+                {% endif %}
+                <li><a href="/college_dashboard" class="sidebar-link">Switch Department</a></li>
             </ul>
         </div>
 
         <main class="main-content">
-            <h2 class="page-title">College Super Administrator Dashboard</h2>
+            <h2 class="page-title">College Admin Portal</h2>
 
-            <!-- Portal URL Share Box -->
-            <div class="share-box">
-                <div>
-                    <strong>Portal Share Link:</strong> Share this link with your students and faculty to let them register/login:
-                    <br>
-                    <code>{{ request.host_url }}college_portal/{{ college.id }}</code>
-                </div>
-                <button onclick="navigator.clipboard.writeText('{{ request.host_url }}college_portal/{{ college.id }}'); alert('Link copied to clipboard!')" class="btn" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">Copy Link</button>
-            </div>
-
-            <!-- Stats Overview -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h4>Total Faculty</h4>
-                    <div class="value">{{ stats.faculty_count }}</div>
-                </div>
-                <div class="stat-card">
-                    <h4>Total Students</h4>
-                    <div class="value">{{ stats.student_count }}</div>
-                </div>
-                <div class="stat-card">
-                    <h4>Total Subjects</h4>
-                    <div class="value">{{ stats.subject_count }}</div>
-                </div>
-            </div>
-
-            <!-- Recent Notifications / AI Status -->
-            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem; color: var(--accent);">AI Scheduler Status</h3>
-                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
-                    Configure subjects for each year, semester, and branch under <strong>Manage Subjects</strong>, then generate the initial weekly schedule under <strong>Manage Periods & Generate</strong>.
-                </p>
-                <div style="display: flex; gap: 1rem;">
-                    <a href="/manage_periods" class="btn" style="width: auto;">Open Timetable Builder</a>
-                    <a href="/manage_subjects" class="btn btn-secondary" style="width: auto;">Add/Edit Subjects</a>
-                </div>
-            </div>
-
-            <!-- Local Registered Admins List -->
-            <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Local Department Admins</h3>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Admin ID</th>
-                            <th>Username</th>
-                            <th>Branch / Department</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if admins %}
-                            {% for adm in admins %}
-                                <tr>
-                                    <td>{{ adm.id }}</td>
-                                    <td><strong>{{ adm.username }}</strong></td>
-                                    <td><span style="background: rgba(168, 85, 247, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ adm.branch }}</span></td>
-                                </tr>
+            {% if not selected_branch %}
+                <!-- Step 1: Select Department -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-top: 1rem; text-align: center;">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Select a Department</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Please choose a department to manage and view statistics.</p>
+                    
+                    {% if branches %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; justify-content: center;">
+                            {% for branch in branches %}
+                                <a href="?branch={{ branch }}" class="btn" style="padding: 1.5rem; text-align: center; text-transform: uppercase; font-weight: bold; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--glass-border); color: var(--text-primary); transition: all 0.3s ease;">
+                                    {{ branch }}
+                                </a>
                             {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td colspan="3" style="text-align: center; color: var(--text-secondary);">No local departmental admins registered yet.</td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
+                        </div>
+                    {% else %}
+                        <p style="color: var(--text-secondary);">No departments are registered yet in the system.</p>
+                    {% endif %}
+                </div>
 
+            {% elif not selected_section %}
+                <!-- Step 2: Select Section -->
+                <div style="margin-bottom: 1.5rem;">
+                    <a href="/college_dashboard" class="btn btn-secondary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">&larr; Back to Departments</a>
+                    <span style="margin-left: 1rem; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; color: var(--accent);">Department: {{ selected_branch }}</span>
+                </div>
+
+                <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; text-align: center;">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent);">Select a Section</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Choose a section to view its timetable, overview stats, and stress analysis.</p>
+                    
+                    {% if sections %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; justify-content: center;">
+                            {% for sec in sections %}
+                                <a href="?branch={{ selected_branch }}&section={{ sec.section_name }}&tab=overview" class="btn" style="padding: 1.5rem; text-align: center; text-transform: uppercase; font-weight: bold; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid var(--glass-border); color: var(--text-primary); transition: all 0.3s ease;">
+                                    Section {{ sec.section_name }} (Year {{ sec.year_level }})
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="color: var(--text-secondary);">No sections registered for department {{ selected_branch }}.</p>
+                    {% endif %}
+                </div>
+
+            {% else %}
+                <!-- Step 3: Section Dashboard Tabs -->
+                <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <a href="?branch={{ selected_branch }}" class="btn btn-secondary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">&larr; Back to Sections</a>
+                        <span style="margin-left: 1rem; font-size: 1.2rem; font-weight: bold; text-transform: uppercase; color: var(--accent);">{{ selected_branch }} - SECTION {{ selected_section }}</span>
+                    </div>
+                </div>
+
+                {% if selected_tab == 'overview' %}
+                    <!-- Overview Tab -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>Section Student Count</h4>
+                            <div class="value">{{ student_count }}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Section Subjects</h4>
+                            <div class="value">{{ subjects|length }}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Department Faculty</h4>
+                            <div class="value">{{ faculties|length }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Subjects List of Section -->
+                    <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Registered Subjects for Section {{ selected_section }}</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject Code</th>
+                                    <th>Subject Name</th>
+                                    <th>Periods / Week</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if subjects %}
+                                    {% for sub in subjects %}
+                                        <tr>
+                                            <td><code>{{ sub.subject_code }}</code></td>
+                                            <td><strong>{{ sub.subject_name }}</strong></td>
+                                            <td>{{ sub.periods_per_week }} Periods</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: var(--text-secondary);">No subjects registered specifically for this section.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Department Faculty List -->
+                    <h3 style="margin: 2rem 0 1rem 0; font-size: 1.2rem; font-weight: 600;">Department Registered Faculty Members</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Faculty Name</th>
+                                    <th>Email</th>
+                                    <th>Experience</th>
+                                    <th>Specialized Subject</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if faculties %}
+                                    {% for fac in faculties %}
+                                        <tr>
+                                            <td><strong>{{ fac.full_name }}</strong></td>
+                                            <td>{{ fac.email }}</td>
+                                            <td>{{ fac.experience_years }} Years</td>
+                                            <td><span style="background: rgba(168, 85, 247, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ fac.subject_name }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-secondary);">No faculty registered for this department yet.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                {% elif selected_tab == 'timetable' %}
+                    <!-- View Timetable Tab -->
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 600;">Timetable for {{ selected_branch }} - Section {{ selected_section }}</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Period 1</th>
+                                    <th>Period 2</th>
+                                    <th>Period 3</th>
+                                    <th>Period 4</th>
+                                    <th>Period 5</th>
+                                    <th>Period 6</th>
+                                    <th>Period 7</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if timetable %}
+                                    {% for row in timetable %}
+                                        <tr>
+                                            <td><strong>{{ row.day_name }}</strong></td>
+                                            <td>{{ row.period1 }}</td>
+                                            <td>{{ row.period2 }}</td>
+                                            <td>{{ row.period3 }}</td>
+                                            <td>{{ row.period4 }}</td>
+                                            <td>{{ row.period5 }}</td>
+                                            <td>{{ row.period6 }}</td>
+                                            <td>{{ row.period7 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" style="text-align: center; color: var(--text-secondary);">The timetable for this section has not been published yet.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                {% elif selected_tab == 'stress' %}
+                    <!-- Stress Analysis Tab -->
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 600;">Student Stress Analysis (Section {{ selected_section }})</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Sleep Hours</th>
+                                    <th>Exam Stress (1-5)</th>
+                                    <th>Daily Study Hours</th>
+                                    <th>Stressed Subject</th>
+                                    <th>Easiest Subject</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if stress_data %}
+                                    {% for row in stress_data %}
+                                        <tr>
+                                            <td><strong>{{ row.full_name }}</strong></td>
+                                            <td>{{ row.sleep_hours }} Hours</td>
+                                            <td>
+                                                <span style="background: {% if row.exam_stress >= 4 %}rgba(239, 68, 68, 0.2){% else %}rgba(34, 197, 94, 0.2){% endif %}; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                                    {{ row.exam_stress }} / 5
+                                                </span>
+                                            </td>
+                                            <td>{{ row.daily_study_hours }} Hours</td>
+                                            <td><span style="color: var(--accent);">{{ row.most_stress_subject }}</span></td>
+                                            <td>{{ row.easiest_subject }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; color: var(--text-secondary);">No stress survey forms submitted by students in this section.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            {% endif %}
         </main>
     </div>
 
