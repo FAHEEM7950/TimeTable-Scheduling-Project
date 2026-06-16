@@ -8,11 +8,19 @@
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
 <body>
+    <script>
+        // Apply theme immediately to prevent screen flashing
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+    </script>
 
     <header>
         <h1>{{ college.college_name }} Portal</h1>
         <div class="nav-links">
+            <a href="/colleges_list">&larr; Back to Colleges</a>
             <a href="/">Home</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
 
@@ -53,5 +61,14 @@
         </div>
     </main>
 
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+    </script>
 </body>
 </html>

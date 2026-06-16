@@ -27,40 +27,23 @@
         <h2 class="hero-title">AI-Based Smart Timetable Scheduler</h2>
         <p class="hero-subtitle">Optimize class schedules dynamically using Student Stress Factors, Student Preferences, and AI-driven substitution/swapping.</p>
 
-        <div class="portal-grid">
-            <!-- Developer Portal -->
-            <div class="portal-card">
-                <h3>Developer Portal</h3>
-                <p>Register as a developer, access global analytics, and inspect Student/Faculty/Admin database metrics across all colleges.</p>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="/developer_register" class="btn btn-secondary" style="flex: 1;">Register</a>
-                    <a href="/developer_login" class="btn" style="flex: 1;">Login</a>
+        <div class="portal-grid" style="display: flex; flex-direction: column; gap: 2rem; align-items: center;">
+            <!-- Select Your College Portal -->
+            <div class="portal-card" style="width: 100%; max-width: 800px;">
+                <h3>Access College Portals (Student / Faculty / Admin)</h3>
+                <p>Browse and search all colleges registered by super admins to enter your student, faculty, or department admin space.</p>
+                <div style="display: flex; justify-content: center; margin-top: 1rem;">
+                    <a href="/colleges_list" class="btn" style="width: auto; padding: 0.75rem 3rem; font-size: 1.1rem; font-weight: 600; background: linear-gradient(135deg, #3b82f6, #a855f7); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2); box-shadow: 0 4px 15px rgba(59,130,246,0.3);">Enter Portals</a>
                 </div>
             </div>
 
             <!-- College Portal -->
-            <div class="portal-card">
+            <div class="portal-card" style="width: 100%; max-width: 800px;">
                 <h3>College Admin Portal</h3>
                 <p>Register your college institution, set up local departments, and configure admins, teachers, and subjects.</p>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="/college_register" class="btn btn-secondary" style="flex: 1;">Register College</a>
-                    <a href="/college_login" class="btn" style="flex: 1;">College Login</a>
+                <div style="display: flex; justify-content: center; margin-top: 1rem;">
+                    <a href="/college_login" class="btn" style="width: auto; padding: 0.75rem 3rem; font-size: 1.1rem; font-weight: 600;">College Login</a>
                 </div>
-            </div>
-
-            <!-- Select Your College Portal -->
-            <div class="portal-card" style="grid-column: span 2;">
-                <h3>Access College Portals (Student / Faculty / Admin)</h3>
-                <p>Select your registered college to register or login as a Student, Faculty member, or Local Admin.</p>
-                <form onsubmit="event.preventDefault(); const cid = document.getElementById('college_select').value; if(cid) { window.location.href='/college_portal/' + cid; } else { alert('Please select a college'); }" style="display: flex; gap: 1rem; width: 100%; max-width: 600px; margin: auto; justify-content: center; align-items: center; flex-wrap: wrap;">
-                    <select id="college_select" class="form-control" style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px; flex-grow: 1; min-width: 250px;" required>
-                        <option value="">-- Choose Your College --</option>
-                        {% for col in colleges %}
-                            <option value="{{ col.id }}">{{ col.college_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn" style="width: auto; padding: 0.75rem 2rem;">Enter Portal</button>
-                </form>
             </div>
         </div>
     </main>
