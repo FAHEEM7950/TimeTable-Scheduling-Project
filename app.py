@@ -1,3 +1,5 @@
+import os
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, session, url_for
 import mysql.connector
 import random
@@ -5,6 +7,16 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "AI_Scheduling_Super_Key_2026"
+
+UPLOAD_FOLDER = os.path.join('static', 'images', 'colleges')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Database Connection Helper
 def get_db_connection():
@@ -50,11 +62,21 @@ def send_sms_otp(phone, otp):
 def home():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, college_name FROM colleges ORDER BY college_name")
+    cursor.execute("SELECT id, college_name, photo_path FROM colleges ORDER BY college_name")
     colleges = cursor.fetchall()
     cursor.close()
     conn.close()
     return render_template('index.html', colleges=colleges)
+
+@app.route('/colleges_list')
+def colleges_list():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, college_name, college_code, photo_path FROM colleges ORDER BY college_name")
+    colleges = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return render_template('colleges_list.html', colleges=colleges)
 
 @app.route('/college_portal/<int:college_id>')
 def college_portal(college_id):
@@ -72,6 +94,9 @@ def college_portal(college_id):
 
 @app.route('/developer_register', methods=['GET', 'POST'])
 def developer_register():
+    if not session.get('developer_logged_in'):
+        return redirect(url_for('developer_login'))
+
     if request.method == 'POST':
         username = request.form['username'].strip()
         email = request.form['email'].strip()
@@ -85,7 +110,7 @@ def developer_register():
                 (username, email, password)
             )
             conn.commit()
-            return redirect(url_for('developer_login'))
+            return redirect(url_for('developer_dashboard'))
         except mysql.connector.Error as err:
             return render_template('developer_register.html', error=f"Registration failed: {err.msg}")
         finally:
@@ -216,25 +241,36 @@ def developer_logout():
 
 @app.route('/college_register', methods=['GET', 'POST'])
 def college_register():
+    if not session.get('developer_logged_in'):
+        return redirect(url_for('developer_login'))
+
     if request.method == 'POST':
         college_name = request.form['college_name']
         college_code = request.form['college_code'].upper().strip()
         email = request.form['email']
         password = request.form['password']
+        
+        photo_path = None
+        if 'college_photo' in request.files:
+            file = request.files['college_photo']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Prefix with timestamp to avoid duplicates
+                unique_filename = f"{int(datetime.now().timestamp())}_{filename}"
+                save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                file.save(save_path)
+                # Store the relative path for easy URL access
+                photo_path = f"images/colleges/{unique_filename}"
 
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO colleges (college_name, college_code, email, password) VALUES (%s, %s, %s, %s)",
-                (college_name, college_code, email, password)
+                "INSERT INTO colleges (college_name, college_code, email, password, photo_path) VALUES (%s, %s, %s, %s, %s)",
+                (college_name, college_code, email, password, photo_path)
             )
             conn.commit()
-            # Auto login
-            cursor.execute("SELECT id FROM colleges WHERE college_code = %s", (college_code,))
-            college_id = cursor.fetchone()[0]
-            session['college_id'] = college_id
-            return redirect(url_for('college_dashboard'))
+            return redirect(url_for('developer_dashboard'))
         except mysql.connector.Error as err:
             return render_template('college_register.html', error=f"Registration failed: {err.msg}")
         finally:

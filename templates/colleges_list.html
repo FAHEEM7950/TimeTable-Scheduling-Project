@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Colleges - Portal Gateway</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <style>
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 3rem auto;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 1rem 1.5rem 1rem 3.5rem;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), var(--card-shadow);
+        }
+        .search-icon {
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            pointer-events: none;
+        }
+        .colleges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .college-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .college-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.15);
+        }
+        .college-photo-wrapper {
+            width: 100%;
+            height: 180px;
+            background: #1e293b;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .college-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .college-card:hover .college-photo {
+            transform: scale(1.08);
+        }
+        .college-placeholder-logo {
+            font-size: 3rem;
+            color: #475569;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .college-info {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+        .college-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        .college-tag {
+            align-self: flex-start;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            background: var(--glass-bg);
+            border: 1px dashed var(--glass-border);
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Apply theme immediately to prevent screen flashing
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+    </script>
+
+    <header>
+        <h1>AI-Sched Portals</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <button id="theme-toggle" class="theme-switch" onclick="toggleTheme()">☀️ Light</button>
+        </div>
+    </header>
+
+    <main class="index-container" style="padding-top: 2rem;">
+        <h2 class="hero-title" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Registered Colleges</h2>
+        <p class="hero-subtitle" style="margin-bottom: 2rem;">Find and enter your registered institution space</p>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="college-search" class="search-input" placeholder="Search by college name or code..." onkeyup="filterColleges()">
+        </div>
+
+        <!-- Colleges Grid -->
+        <div class="colleges-grid" id="colleges-grid">
+            {% if colleges %}
+                {% for col in colleges %}
+                    <a href="/college_portal/{{ col.id }}" class="college-card" data-name="{{ col.college_name|lower }}" data-code="{{ col.college_code|lower }}">
+                        <div class="college-photo-wrapper">
+                            {% if col.photo_path %}
+                                <img src="{{ url_for('static', filename=col.photo_path) }}" alt="{{ col.college_name }}" class="college-photo">
+                            {% else %}
+                                <div class="college-placeholder-logo">
+                                    {{ col.college_name[:2] }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="college-info">
+                            <h4 class="college-title">{{ col.college_name }}</h4>
+                            <span class="college-tag">{{ col.college_code }}</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="no-results" style="display: block;">
+                    No colleges registered yet in the system.
+                </div>
+            {% endif %}
+            
+            <!-- Dynamic No Results Message (Hidden by default) -->
+            <div class="no-results" id="no-search-results" style="display: none;">
+                No colleges match your search query.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
+        function toggleTheme() {
+            const isL = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isL ? 'light' : 'dark');
+            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
+        }
+
+        function filterColleges() {
+            const input = document.getElementById('college-search').value.toLowerCase().trim();
+            const cards = document.getElementsByClassName('college-card');
+            const noResults = document.getElementById('no-search-results');
+            let hasVisibleCard = false;
+
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const name = card.getAttribute('data-name');
+                const code = card.getAttribute('data-code');
+
+                if (name.includes(input) || code.includes(input)) {
+                    card.style.display = 'flex';
+                    hasVisibleCard = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            }
+
+            if (cards.length > 0) {
+                noResults.style.display = hasVisibleCard ? 'none' : 'block';
+            }
+        }
+    </script>
+</body>
+</html>

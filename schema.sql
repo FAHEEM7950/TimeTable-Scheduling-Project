@@ -9,6 +9,7 @@ CREATE TABLE colleges (
     college_code VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    photo_path VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,6 +21,12 @@ CREATE TABLE developers (
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Seed Developers
+INSERT INTO developers (username, email, password) VALUES 
+('Faheem Ahamed', 'faheem@smartai.com', 'SmartAI@TimeTable#2026'),
+('Ram krishna Reddy', 'ramkrishna@smartai.com', 'SmartAI@TimeTable#2026')
+ON DUPLICATE KEY UPDATE password=VALUES(password);
 
 -- 3. Local College Admins Table
 CREATE TABLE admin (
