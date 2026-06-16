@@ -116,18 +116,18 @@ CREATE TABLE stress_forms (
 );
 
 -- 9. Faculty Absence Requests Table
-CREATE TABLE absence_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    faculty_id INT NOT NULL,
-    college_id INT NOT NULL,
-    absent_date DATE NOT NULL,
-    start_period INT NOT NULL,
-    end_period INT NOT NULL,
-    status VARCHAR(50) DEFAULT 'Pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
-    FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
-);
+    CREATE TABLE absence_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        faculty_id INT NOT NULL,
+        college_id INT NOT NULL,
+        absent_date DATE NOT NULL,
+        start_period INT NOT NULL,
+        end_period INT NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE,
+        FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
+    );
 
 -- 10. Timetable Table
 CREATE TABLE timetable (

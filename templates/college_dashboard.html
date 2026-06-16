@@ -20,6 +20,16 @@
             font-size: 0.95rem;
             color: var(--accent);
         }
+        .stress-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .stress-high {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        .stress-low {
+            background: rgba(34, 197, 94, 0.2);
+        }
     </style>
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </head>
@@ -244,7 +254,7 @@
                                             <td><strong>{{ row.full_name }}</strong></td>
                                             <td>{{ row.sleep_hours }} Hours</td>
                                             <td>
-                                                <span style="background: {% if row.exam_stress >= 4 %}rgba(239, 68, 68, 0.2){% else %}rgba(34, 197, 94, 0.2){% endif %}; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                                <span class="stress-badge {% if row.exam_stress >= 4 %}stress-high{% else %}stress-low{% endif %}">
                                                     {{ row.exam_stress }} / 5
                                                 </span>
                                             </td>
