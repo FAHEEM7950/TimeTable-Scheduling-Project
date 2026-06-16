@@ -11,7 +11,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="@Faheem7950",
+        password="Ramakrishna@2007",
         database="timetable_db"
     )
 
