@@ -504,3 +504,75 @@ tr:hover td {
     color: var(--danger);
     border: 1px solid var(--danger);
 }
+
+/* Print styles to make timetable look great and fit on a single landscape page */
+@media print {
+    @page {
+        size: landscape;
+        margin: 0.5cm;
+    }
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 9pt !important;
+    }
+    header, .sidebar, .btn, .filter-bar, #theme-toggle, .nav-links, .page-title, button {
+        display: none !important;
+    }
+    .dashboard-wrapper {
+        display: block !important;
+        background: transparent !important;
+    }
+    .main-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .timetable-grid-container {
+        border: 1.5px solid #000000 !important;
+        overflow: visible !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .timetable-table {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: avoid !important;
+    }
+    .timetable-table th {
+        background-color: #1e3a8a !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        border: 1px solid #000000 !important;
+        padding: 0.5rem !important;
+        font-size: 8pt !important;
+    }
+    .timetable-table td {
+        color: #000000 !important;
+        border: 1px solid #000000 !important;
+        background-color: transparent !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 0.5rem 0.25rem !important;
+    }
+    .timetable-table td.day-cell {
+        background-color: #e5e7eb !important;
+        font-weight: bold !important;
+        border: 1px solid #000000 !important;
+        font-size: 8.5pt !important;
+    }
+    .timetable-table td.break-cell {
+        background-color: #fef3c7 !important;
+        color: #d97706 !important;
+        font-weight: bold !important;
+        border: 1px solid #000000 !important;
+    }
+    .timetable-table td.session-active {
+        background-color: #eff6ff !important;
+        border: 1.5px solid #3b82f6 !important;
+        font-weight: bold !important;
+    }
+}

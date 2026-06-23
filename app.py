@@ -903,32 +903,53 @@ def faculty_login():
     conn.close()
 
     if request.method == 'POST':
-        phone = request.form['phone'].strip()
+        login_type = request.form.get('login_type', 'otp')
         col_id = int(request.form['college_id'])
 
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM faculty WHERE phone = %s AND college_id = %s", (phone, col_id))
-        faculty = cursor.fetchone()
-        cursor.close()
-        conn.close()
+        if login_type == 'otp':
+            phone = request.form['phone'].strip()
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM faculty WHERE phone = %s AND college_id = %s", (phone, col_id))
+            faculty = cursor.fetchone()
+            cursor.close()
+            conn.close()
 
-        if faculty:
-            otp = random.randint(1000, 9999)
-            session['otp'] = str(otp)
-            session['otp_phone'] = phone
-            session['otp_college_id'] = col_id
-            
-            # Call Twilio helper
-            send_sms_otp(phone, str(otp))
-            
-            print("====================================")
-            print(f" OTP SECURITY: Code is {otp} ")
-            print("====================================")
+            if faculty:
+                otp = random.randint(1000, 9999)
+                session['otp'] = str(otp)
+                session['otp_phone'] = phone
+                session['otp_college_id'] = col_id
+                
+                # Call Twilio helper
+                send_sms_otp(phone, str(otp))
+                
+                print("====================================")
+                print(f" OTP SECURITY: Code is {otp} ")
+                print("====================================")
 
-            return redirect(url_for('verify_otp'))
-        else:
-            return render_template('faculty_login.html', college=college, error="Phone number is not registered for this college.")
+                return redirect(url_for('verify_otp'))
+            else:
+                return render_template('faculty_login.html', college=college, error="Phone number is not registered for this college.")
+        
+        elif login_type == 'password':
+            email = request.form['email'].strip()
+            password = request.form['password']
+
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM faculty WHERE email = %s AND college_id = %s", (email, col_id))
+            faculty = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if faculty and faculty['password'] == password:
+                session['faculty_id'] = faculty['id']
+                session['faculty_name'] = faculty['full_name']
+                session['college_id'] = col_id
+                return redirect(url_for('faculty_dashboard'))
+            else:
+                return render_template('faculty_login.html', college=college, error="Invalid email or password.")
 
     return render_template('faculty_login.html', college=college)
 

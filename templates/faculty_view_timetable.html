@@ -10,7 +10,7 @@
 <body>
 
     <header>
-        <h1>{{ college.college_name }} Faculty</h1>
+        <h1>Automatic TimeTable Generator</h1>
         <div class="nav-links">
             <a href="/faculty_logout" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Logout</a>
         </div>
@@ -28,7 +28,10 @@
         </div>
 
         <main class="main-content">
-            <h2 class="page-title">My Teaching Schedule</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 class="page-title" style="margin-bottom: 0;">My Teaching Schedule</h2>
+                <button class="btn" style="width: auto; padding: 0.5rem 1rem;" onclick="window.print()">Print Timetable</button>
+            </div>
 
             <p style="color: var(--text-secondary); margin-bottom: 2rem;">
                 Here is your weekly schedule. Slots where you are assigned to teach are highlighted.

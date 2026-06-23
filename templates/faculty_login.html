@@ -10,7 +10,7 @@
 <body>
 
     <header>
-        <h1>{{ college.college_name }} Portal</h1>
+        <h1>Automatic TimeTable Generator</h1>
         <div class="nav-links">
             <a href="/college_portal/{{ college.id }}">Back to Gateway</a>
         </div>
@@ -25,15 +25,39 @@
                 <div class="message-box message-error">{{ error }}</div>
             {% endif %}
 
+            <!-- OTP Login Option -->
             <form method="POST">
                 <input type="hidden" name="college_id" value="{{ college.id }}">
+                <input type="hidden" name="login_type" value="otp">
 
                 <div class="form-group">
-                    <label for="phone">Phone Number</label>
+                    <label for="phone">Phone Number (OTP Login)</label>
                     <input type="text" id="phone" name="phone" class="form-control" placeholder="e.g. 9876543210" required>
                 </div>
 
                 <button type="submit" class="btn" style="margin-top: 1rem;">Send OTP Code</button>
+            </form>
+
+            <div style="text-align: center; margin: 1.5rem 0; color: var(--text-secondary); font-weight: 500;">
+                — OR —
+            </div>
+
+            <!-- Password Login Option -->
+            <form method="POST">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
+                <input type="hidden" name="login_type" value="password">
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="e.g. jane.smith@college.edu" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn" style="margin-top: 1rem; background: linear-gradient(135deg, #a855f7, #3b82f6);">Login with Password</button>
             </form>
         </div>
     </main>
