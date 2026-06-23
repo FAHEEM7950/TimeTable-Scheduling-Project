@@ -68,22 +68,79 @@
         <div class="sidebar">
             <h3 class="sidebar-title">Navigation</h3>
             <ul class="sidebar-menu">
-                <li><a href="{{ dash_url }}" class="sidebar-link">Overview</a></li>
-                <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
-                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
-                <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
-                <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
-                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
-                <li><a href="/stress_dashboard" class="sidebar-link active">Stress Analysis</a></li>
+                {% if is_local %}
+                    <li><a href="/admin_dashboard" class="sidebar-link">Overview</a></li>
+                    <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
+                    <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
+                    <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
+                    <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                    <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
+                    <li><a href="/stress_dashboard" class="sidebar-link active">Stress Analysis</a></li>
+                    <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+                {% else %}
+                    <li><a href="/college_dashboard" class="sidebar-link">Dashboard</a></li>
+                    <li><a href="/stress_dashboard" class="sidebar-link active">Stress Analysis</a></li>
+                    <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
+                {% endif %}
             </ul>
         </div>
         {% endif %}
 
         <main class="main-content" style="{% if is_dev %}padding: 2.5rem 5rem; max-width: 1400px; margin: auto;{% endif %}">
-            <h2 class="page-title">Student Stress & Timing Analysis</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                Visualizing student-submitted preferences, fatigue levels, and academic stress indicators.
-            </p>
+            <!-- Filter Bar for Section-wise Stress Analysis -->
+            <form method="GET" class="filter-bar" style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center; background: var(--bg-secondary); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 12px; flex-wrap: wrap;">
+                <input type="hidden" name="college_id" value="{{ college.id }}">
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="branch">Branch/Dept:</label>
+                    <select id="branch" name="branch" onchange="this.form.submit()" {% if admin_branch %}disabled{% endif %}>
+                        <option value="">-- All Departments --</option>
+                        {% for b in branches %}
+                            <option value="{{ b }}" {% if b == selected_branch %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="section_name">Section:</label>
+                    <select id="section_name" name="section_name" onchange="this.form.submit()">
+                        <option value="">-- All Sections --</option>
+                        {% for sec in sections %}
+                            <option value="{{ sec }}" {% if selected_section == sec %}selected{% endif %}>{{ sec }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="year_level">Year:</label>
+                    <select id="year_level" name="year_level" onchange="this.form.submit()">
+                        <option value="">-- All Years --</option>
+                        <option value="1" {% if selected_year == 1 %}selected{% endif %}>Year 1</option>
+                        <option value="2" {% if selected_year == 2 %}selected{% endif %}>Year 2</option>
+                        <option value="3" {% if selected_year == 3 %}selected{% endif %}>Year 3</option>
+                        <option value="4" {% if selected_year == 4 %}selected{% endif %}>Year 4</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="semester">Semester:</label>
+                    <select id="semester" name="semester" onchange="this.form.submit()">
+                        <option value="">-- All Semesters --</option>
+                        <option value="1" {% if selected_semester == 1 %}selected{% endif %}>Sem 1</option>
+                        <option value="2" {% if selected_semester == 2 %}selected{% endif %}>Sem 2</option>
+                        <option value="3" {% if selected_semester == 3 %}selected{% endif %}>Sem 3</option>
+                        <option value="4" {% if selected_semester == 4 %}selected{% endif %}>Sem 4</option>
+                        <option value="5" {% if selected_semester == 5 %}selected{% endif %}>Sem 5</option>
+                        <option value="6" {% if selected_semester == 6 %}selected{% endif %}>Sem 6</option>
+                        <option value="7" {% if selected_semester == 7 %}selected{% endif %}>Sem 7</option>
+                        <option value="8" {% if selected_semester == 8 %}selected{% endif %}>Sem 8</option>
+                    </select>
+                </div>
+                
+                {% if selected_branch or selected_section or selected_year or selected_semester %}
+                    <a href="/stress_dashboard{% if session.get('developer_logged_in') %}?college_id={{ college.id }}{% endif %}" class="btn btn-secondary" style="width: auto; padding: 0.4rem 1rem; text-decoration: none; font-size: 0.85rem;">Clear Filters</a>
+                {% endif %}
+            </form>
 
             <!-- Chart Grid -->
             <div class="chart-grid">

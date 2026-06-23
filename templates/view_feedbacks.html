@@ -9,10 +9,13 @@
 </head>
 <body>
 
+    {% set is_local = session.get('local_admin_id') is not none %}
+    {% set dash_url = '/admin_dashboard' if is_local else '/college_dashboard' %}
+
     <header>
         <h1>Automatic TimeTable Generator</h1>
         <div class="nav-links">
-            <a href="/college_dashboard" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
+            <a href="{{ dash_url }}" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Back to Dashboard</a>
         </div>
     </header>
 
@@ -20,14 +23,20 @@
         <div class="sidebar">
             <h3 class="sidebar-title">Navigation</h3>
             <ul class="sidebar-menu">
-                <li><a href="/college_dashboard" class="sidebar-link">Overview</a></li>
-                <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
-                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
-                <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
-                <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
-                <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
-                <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
-                <li><a href="/view_feedbacks" class="sidebar-link active">Student Feedback</a></li>
+                {% if is_local %}
+                    <li><a href="/admin_dashboard" class="sidebar-link">Overview</a></li>
+                    <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
+                    <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
+                    <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
+                    <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
+                    <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
+                    <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
+                    <li><a href="/view_feedbacks" class="sidebar-link active">Student Feedback</a></li>
+                {% else %}
+                    <li><a href="/college_dashboard" class="sidebar-link">Dashboard</a></li>
+                    <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis</a></li>
+                    <li><a href="/view_feedbacks" class="sidebar-link active">Student Feedback</a></li>
+                {% endif %}
             </ul>
         </div>
 

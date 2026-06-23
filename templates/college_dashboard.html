@@ -53,10 +53,12 @@
                 {% if selected_branch and selected_section %}
                     <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=overview" class="sidebar-link {% if selected_tab == 'overview' %}active{% endif %}">Overview</a></li>
                     <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=timetable" class="sidebar-link {% if selected_tab == 'timetable' %}active{% endif %}">View Timetable</a></li>
-                    <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=stress" class="sidebar-link {% if selected_tab == 'stress' %}active{% endif %}">Stress Analysis</a></li>
+                    <li><a href="?branch={{ selected_branch }}&section={{ selected_section }}&tab=stress" class="sidebar-link {% if selected_tab == 'stress' %}active{% endif %}">Section Stress Tab</a></li>
                     <li><hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 1rem 0;"></li>
                 {% endif %}
                 <li><a href="/college_dashboard" class="sidebar-link">Switch Department</a></li>
+                <li><a href="/stress_dashboard" class="sidebar-link">Stress Analysis Charts</a></li>
+                <li><a href="/view_feedbacks" class="sidebar-link">Student Feedback</a></li>
             </ul>
         </div>
 
@@ -241,7 +243,7 @@
                                 <tr>
                                     <th>Student Name</th>
                                     <th>Sleep Hours</th>
-                                    <th>Exam Stress (1-5)</th>
+                                    <th>Exam Stress (1-10)</th>
                                     <th>Daily Study Hours</th>
                                     <th>Stressed Subject</th>
                                     <th>Easiest Subject</th>
@@ -254,8 +256,8 @@
                                             <td><strong>{{ row.full_name }}</strong></td>
                                             <td>{{ row.sleep_hours }} Hours</td>
                                             <td>
-                                                <span class="stress-badge {% if row.exam_stress >= 4 %}stress-high{% else %}stress-low{% endif %}">
-                                                    {{ row.exam_stress }} / 5
+                                                <span class="stress-badge {% if row.exam_stress >= 7 %}stress-high{% else %}stress-low{% endif %}">
+                                                    {{ row.exam_stress }} / 10
                                                 </span>
                                             </td>
                                             <td>{{ row.daily_study_hours }} Hours</td>

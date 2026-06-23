@@ -1085,6 +1085,7 @@ def faculty_logout():
 @app.route('/view_feedbacks')
 def view_feedbacks():
     college_id = session.get('college_id')
+    admin_branch = session.get('admin_branch')
     if not college_id:
         return redirect(url_for('home'))
 
@@ -1094,11 +1095,18 @@ def view_feedbacks():
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
 
-    cursor.execute(
-        """SELECT f.* FROM feedback f 
-           JOIN students s ON f.student_id = s.id 
-           WHERE s.college_id = %s ORDER BY f.id DESC""", (college_id,)
-    )
+    if admin_branch:
+        cursor.execute(
+            """SELECT f.* FROM feedback f 
+               JOIN students s ON f.student_id = s.id 
+               WHERE s.college_id = %s AND s.branch = %s ORDER BY f.id DESC""", (college_id, admin_branch)
+        )
+    else:
+        cursor.execute(
+            """SELECT f.* FROM feedback f 
+               JOIN students s ON f.student_id = s.id 
+               WHERE s.college_id = %s ORDER BY f.id DESC""", (college_id,)
+        )
     feedbacks = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -1349,13 +1357,48 @@ def stress_dashboard():
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
 
-    # Build WHERE clause based on admin branch
+    # Fetch distinct branches and sections for filter selects
+    cursor.execute("SELECT DISTINCT branch FROM sections WHERE college_id = %s ORDER BY branch", (college_id,))
+    branches_rows = cursor.fetchall()
+    branches = [b['branch'] for b in branches_rows]
+
+    cursor.execute("SELECT DISTINCT section_name FROM sections WHERE college_id = %s ORDER BY section_name", (college_id,))
+    sections_rows = cursor.fetchall()
+    sections = [s['section_name'] for s in sections_rows]
+
+    selected_branch = request.args.get('branch')
     if admin_branch:
-        where_clause = "WHERE s.college_id = %s AND s.branch = %s"
-        params = (college_id, admin_branch)
-    else:
-        where_clause = "WHERE s.college_id = %s"
-        params = (college_id,)
+        selected_branch = admin_branch
+    
+    selected_year = request.args.get('year_level')
+    if selected_year:
+        selected_year = int(selected_year)
+        
+    selected_semester = request.args.get('semester')
+    if selected_semester:
+        selected_semester = int(selected_semester)
+        
+    selected_section = request.args.get('section_name')
+
+    # Build dynamic WHERE clause based on filters
+    where_parts = ["s.college_id = %s"]
+    params = [college_id]
+
+    if selected_branch:
+        where_parts.append("s.branch = %s")
+        params.append(selected_branch)
+    if selected_year:
+        where_parts.append("s.year_level = %s")
+        params.append(selected_year)
+    if selected_semester:
+        where_parts.append("s.semester = %s")
+        params.append(selected_semester)
+    if selected_section:
+        where_parts.append("s.section_name = %s")
+        params.append(selected_section)
+
+    where_clause = "WHERE " + " AND ".join(where_parts)
+    params = tuple(params)
 
     # 1. Stress Stats — using explicit named keys
     cursor.execute(f"""
@@ -1458,7 +1501,13 @@ def stress_dashboard():
         easiest_subjects=easiest_subjects,
         sleep_hours=sleep_hours,
         productivity=productivity,
-        fresh_sleep=fresh_sleep
+        fresh_sleep=fresh_sleep,
+        branches=branches,
+        sections=sections,
+        selected_branch=selected_branch,
+        selected_year=selected_year,
+        selected_semester=selected_semester,
+        selected_section=selected_section
     )
 
 @app.route('/manage_periods')
