@@ -30,6 +30,7 @@
             {% endif %}
 
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="college_id" value="{{ college.id }}">
 
                 <div class="form-group">
@@ -52,14 +53,6 @@
         </div>
     </main>
 
-    <script>
-        const btn = document.getElementById('theme-toggle');
-        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
-        function toggleTheme() {
-            const isL = document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', isL ? 'light' : 'dark');
-            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
-        }
-    </script>
+    
 </body>
 </html>

@@ -208,3 +208,14 @@ CREATE TABLE dashboard_stats (
     high_stress INT DEFAULT 0,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Constraints
+ALTER TABLE faculty ADD CONSTRAINT unique_faculty_id UNIQUE (college_id, employee_id);
+ALTER TABLE students ADD CONSTRAINT unique_student_roll UNIQUE (college_id, roll_no);
+ALTER TABLE subjects ADD CONSTRAINT unique_subject_section UNIQUE (college_id, subject_code, branch, year_level, semester, section_name);
+
+-- Indexes
+CREATE INDEX idx_timetable_lookup ON timetable(college_id, branch, year_level, semester, section_name, published);
+CREATE INDEX idx_students_lookup ON students(college_id, branch, year_level, semester, section_name);
+CREATE INDEX idx_stress_forms_student ON stress_forms(student_id);
+CREATE INDEX idx_subjects_lookup ON subjects(college_id, branch, year_level, semester, section_name);

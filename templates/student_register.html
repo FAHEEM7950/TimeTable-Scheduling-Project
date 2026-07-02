@@ -26,6 +26,7 @@
             {% endif %}
 
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="college_id" value="{{ college.id }}">
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

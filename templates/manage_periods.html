@@ -52,6 +52,7 @@
                 </p>
 
                 <form method="POST" action="/generate_timetable" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="branch">Select Branch / Dept</label>

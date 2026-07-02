@@ -98,6 +98,7 @@
             {% endif %}
 
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <label for="otp">4-Digit Code</label>
                     <input type="text" id="otp" name="otp" class="form-control" placeholder="1234" maxlength="4" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em;" required autocomplete="off">

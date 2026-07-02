@@ -27,6 +27,7 @@
 
             <!-- OTP Login Option -->
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="college_id" value="{{ college.id }}">
                 <input type="hidden" name="login_type" value="otp">
 
@@ -44,6 +45,7 @@
 
             <!-- Password Login Option -->
             <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="college_id" value="{{ college.id }}">
                 <input type="hidden" name="login_type" value="password">
 

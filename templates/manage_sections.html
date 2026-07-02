@@ -49,6 +49,7 @@
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2.5rem;">
                 <h3 style="margin-bottom: 1.5rem; color: var(--accent);">Configure New Section</h3>
                 <form method="POST" action="/manage_sections" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     
                     <div class="form-group" style="margin-bottom: 0;">
                         <label for="branch">Branch / Dept</label>
@@ -101,6 +102,7 @@
                                     <td><span style="background: rgba(59, 130, 246, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.85rem;">Section {{ sec.section_name }}</span></td>
                                     <td>
                                         <form method="POST" action="/delete_section/{{ sec.id }}" style="display:inline;" onsubmit="return confirm('Deleting a section will not delete timetables or students, but they will no longer be selectable in forms. Continue?')">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: auto;">Delete</button>
                                         </form>
                                     </td>

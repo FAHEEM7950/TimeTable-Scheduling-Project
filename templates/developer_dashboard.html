@@ -79,14 +79,6 @@
         </main>
     </div>
 
-    <script>
-        const btn = document.getElementById('theme-toggle');
-        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
-        function toggleTheme() {
-            const isL = document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', isL ? 'light' : 'dark');
-            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
-        }
-    </script>
+    
 </body>
 </html>

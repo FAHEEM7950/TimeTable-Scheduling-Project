@@ -1,6 +1,6 @@
 import os
 
-TEMPLATES_DIR = r"d:\TimetableProject\templates"
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 SCRIPT_TAG = '<script src="{{ url_for(\'static\', filename=\'theme.js\') }}"></script>'
 
 def inject_script_into_templates():

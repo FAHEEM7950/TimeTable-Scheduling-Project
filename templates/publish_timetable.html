@@ -78,6 +78,7 @@
                                     </td>
                                     <td>
                                         <form method="POST" action="/toggle_publish_timetable" style="display:inline;">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="branch" value="{{ sch.branch }}">
                                             <input type="hidden" name="section_name" value="{{ sch.section_name }}">
                                             <input type="hidden" name="year_level" value="{{ sch.year_level }}">
@@ -104,14 +105,6 @@
         </main>
     </div>
 
-    <script>
-        const btn = document.getElementById('theme-toggle');
-        if (btn) { btn.innerText = document.body.classList.contains('light-mode') ? '🌙 Dark' : '☀️ Light'; }
-        function toggleTheme() {
-            const isL = document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', isL ? 'light' : 'dark');
-            if (btn) btn.innerText = isL ? '🌙 Dark' : '☀️ Light';
-        }
-    </script>
+    
 </body>
 </html>

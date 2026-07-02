@@ -1,12 +1,20 @@
 import os
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session, url_for, abort
 import mysql.connector
 import random
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
 app = Flask(__name__)
-app.secret_key = "AI_Scheduling_Super_Key_2026"
+app.secret_key = os.environ.get("SECRET_KEY", "AI_Scheduling_Super_Key_2026")
+
+app.config.update(
+    SESSION_COOKIE_SECURE=False,     # True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
 
 UPLOAD_FOLDER = os.path.join('static', 'images', 'colleges')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -21,11 +29,30 @@ def allowed_file(filename):
 # Database Connection Helper
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="@Faheem7950",
-        database="timetable_db"
+        host=os.environ.get("DB_HOST", "localhost"),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASSWORD", "@Faheem7950"),
+        database=os.environ.get("DB_NAME", "timetable_db")
     )
+
+# CSRF Protection Hook
+@app.before_request
+def csrf_protect():
+    if request.method == "POST":
+        # Allow disabling CSRF verification via environment variables for testing purposes
+        if os.environ.get("DISABLE_CSRF") == "true":
+            return
+        token = session.get("_csrf_token")
+        form_token = request.form.get("_csrf_token")
+        if not token or token != form_token:
+            abort(403, description="CSRF token missing or invalid")
+
+def generate_csrf_token():
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_hex(16)
+    return session["_csrf_token"]
+
+app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
 # Context processor to make "request" and "session" available in templates
 @app.context_processor
@@ -98,16 +125,21 @@ def developer_register():
         return redirect(url_for('developer_login'))
 
     if request.method == 'POST':
-        username = request.form['username'].strip()
-        email = request.form['email'].strip()
-        password = request.form['password']
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not email or not password:
+            return render_template('developer_register.html', error="All fields are required.")
+
+        hashed_password = generate_password_hash(password)
 
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
                 "INSERT INTO developers (username, email, password) VALUES (%s, %s, %s)",
-                (username, email, password)
+                (username, email, hashed_password)
             )
             conn.commit()
             return redirect(url_for('developer_dashboard'))
@@ -122,17 +154,20 @@ def developer_register():
 @app.route('/developer_login', methods=['GET', 'POST'])
 def developer_login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not password:
+            return render_template('developer_login.html', error="Username and password are required.")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM developers WHERE username = %s AND password = %s", (username, password))
+        cursor.execute("SELECT * FROM developers WHERE username = %s", (username,))
         dev = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        if dev:
+        if dev and check_password_hash(dev['password'], password):
             session['developer_logged_in'] = True
             session['dev_username'] = dev['username']
             return redirect(url_for('developer_dashboard'))
@@ -245,11 +280,15 @@ def college_register():
         return redirect(url_for('developer_login'))
 
     if request.method == 'POST':
-        college_name = request.form['college_name']
-        college_code = request.form['college_code'].upper().strip()
-        email = request.form['email']
-        password = request.form['password']
+        college_name = request.form.get('college_name', '').strip()
+        college_code = request.form.get('college_code', '').upper().strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
         
+        if not college_name or not college_code or not email or not password:
+            return render_template('college_register.html', error="All fields are required.")
+
+        hashed_password = generate_password_hash(password)
         photo_path = None
         if 'college_photo' in request.files:
             file = request.files['college_photo']
@@ -267,7 +306,7 @@ def college_register():
         try:
             cursor.execute(
                 "INSERT INTO colleges (college_name, college_code, email, password, photo_path) VALUES (%s, %s, %s, %s, %s)",
-                (college_name, college_code, email, password, photo_path)
+                (college_name, college_code, email, hashed_password, photo_path)
             )
             conn.commit()
             return redirect(url_for('developer_dashboard'))
@@ -282,17 +321,20 @@ def college_register():
 @app.route('/college_login', methods=['GET', 'POST'])
 def college_login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+
+        if not email or not password:
+            return render_template('college_login.html', error="Email and password are required.")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM colleges WHERE email = %s AND password = %s", (email, password))
+        cursor.execute("SELECT * FROM colleges WHERE email = %s", (email,))
         college = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        if college:
+        if college and check_password_hash(college['password'], password):
             session['college_id'] = college['id']
             return redirect(url_for('college_dashboard'))
         else:
@@ -417,17 +459,22 @@ def admin_register():
     conn.close()
 
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        branch = request.form['branch'].upper().strip()
-        col_id = request.form['college_id']
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        branch = request.form.get('branch', '').upper().strip()
+        col_id = request.form.get('college_id', '')
+
+        if not username or not password or not branch or not col_id:
+            return render_template('admin_register.html', college=college, error="All fields are required.")
+
+        hashed_password = generate_password_hash(password)
 
         conn = get_db_connection()
         cursor = conn.cursor()
         try:
             cursor.execute(
                 "INSERT INTO admin (college_id, username, password, college_name, branch) VALUES (%s, %s, %s, %s, %s)",
-                (col_id, username, password, college['college_name'], branch)
+                (col_id, username, hashed_password, college['college_name'], branch)
             )
             conn.commit()
             return redirect(url_for('admin_login', college_id=col_id))
@@ -453,18 +500,21 @@ def admin_login():
     conn.close()
 
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        col_id = request.form['college_id']
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        col_id = request.form.get('college_id', '')
+
+        if not username or not password or not col_id:
+            return render_template('admin_login.html', college=college, error="All fields are required.")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM admin WHERE username = %s AND password = %s AND college_id = %s", (username, password, col_id))
+        cursor.execute("SELECT * FROM admin WHERE username = %s AND college_id = %s", (username, col_id))
         admin = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        if admin:
+        if admin and check_password_hash(admin['password'], password):
             session['local_admin_id'] = admin['id']
             session['admin_branch'] = admin['branch']
             session['college_id'] = col_id
@@ -531,26 +581,35 @@ def manage_subjects():
     cursor = conn.cursor(dictionary=True)
 
     if request.method == 'POST':
-        subject_code = request.form['subject_code'].strip().upper()
-        subject_name = request.form['subject_name'].strip()
+        subject_code = request.form.get('subject_code', '').strip().upper()
+        subject_name = request.form.get('subject_name', '').strip()
         # Lock branch to local admin branch if logged in
-        branch = admin_branch if admin_branch else request.form['branch'].strip().upper()
-        year_level = int(request.form['year_level'])
-        semester = int(request.form['semester'])
-        section_name = request.form['section_name'].strip().upper()
-        periods_per_week = int(request.form['periods_per_week'])
-
+        branch = admin_branch if admin_branch else request.form.get('branch', '').strip().upper()
+        
         try:
-            cursor.execute(
-                """INSERT INTO subjects (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week) 
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week)
-            )
-            conn.commit()
-            success_msg = "Subject added successfully!"
-        except mysql.connector.Error as err:
-            success_msg = None
-            error_msg = f"Error: {err.msg}"
+            year_level = int(request.form.get('year_level', '1'))
+            semester = int(request.form.get('semester', '1'))
+            periods_per_week = int(request.form.get('periods_per_week', '3'))
+        except ValueError:
+            # We will show error message when rendering the template
+            error_msg = "Year level, Semester, and Periods per week must be valid numbers."
+            
+        section_name = request.form.get('section_name', '').strip().upper()
+
+        if 'error_msg' not in locals():
+            if not subject_code or not subject_name or not branch or not section_name:
+                error_msg = "All fields are required."
+            else:
+                try:
+                    cursor.execute(
+                        """INSERT INTO subjects (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week) 
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                        (college_id, subject_code, subject_name, branch, year_level, semester, section_name, periods_per_week)
+                    )
+                    conn.commit()
+                    success_msg = "Subject added successfully!"
+                except mysql.connector.Error as err:
+                    error_msg = f"Database Error: {err.msg}"
             
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
@@ -617,16 +676,26 @@ def student_register():
     conn.close()
 
     if request.method == 'POST':
-        full_name = request.form['full_name']
-        email = request.form['email']
-        password = request.form['password']
-        phone = request.form['phone']
-        branch = request.form['branch'].upper().strip()
-        year_level = int(request.form['year_level'])
-        semester = int(request.form['semester'])
-        section_name = request.form['section_name'].upper().strip()
-        roll_no = request.form['roll_no'].upper().strip()
-        col_id = int(request.form['college_id'])
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        phone = request.form.get('phone', '').strip()
+        branch = request.form.get('branch', '').upper().strip()
+        
+        try:
+            year_level = int(request.form.get('year_level', '1'))
+            semester = int(request.form.get('semester', '1'))
+            col_id = int(request.form.get('college_id', '0'))
+        except ValueError:
+            return render_template('student_register.html', college=college, sections=sections, error="Invalid numeric values supplied.")
+
+        section_name = request.form.get('section_name', '').upper().strip()
+        roll_no = request.form.get('roll_no', '').upper().strip()
+
+        if not full_name or not email or not password or not phone or not branch or not section_name or not roll_no or not col_id:
+            return render_template('student_register.html', college=college, sections=sections, error="All fields are required.")
+
+        hashed_password = generate_password_hash(password)
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -634,7 +703,7 @@ def student_register():
             cursor.execute(
                 """INSERT INTO students (college_id, full_name, email, password, branch, year_level, semester, section_name, roll_no, phone)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                (col_id, full_name, email, password, branch, year_level, semester, section_name, roll_no, phone)
+                (col_id, full_name, email, hashed_password, branch, year_level, semester, section_name, roll_no, phone)
             )
             conn.commit()
             return redirect(url_for('student_login', college_id=col_id))
@@ -660,18 +729,25 @@ def student_login():
     conn.close()
 
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        col_id = int(request.form['college_id'])
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        
+        try:
+            col_id = int(request.form.get('college_id', '0'))
+        except ValueError:
+            return render_template('student_login.html', college=college, error="Invalid College ID.")
+
+        if not email or not password or not col_id:
+            return render_template('student_login.html', college=college, error="Email and password are required.")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM students WHERE email = %s AND password = %s AND college_id = %s", (email, password, col_id))
+        cursor.execute("SELECT * FROM students WHERE email = %s AND college_id = %s", (email, col_id))
         student = cursor.fetchone()
         cursor.close()
         conn.close()
 
-        if student:
+        if student and check_password_hash(student['password'], password):
             session['student_id'] = student['id']
             session['student_email'] = student['email']
             session['college_id'] = col_id
@@ -734,34 +810,53 @@ def stress_form():
     cursor = conn.cursor(dictionary=True)
 
     if request.method == 'POST':
-        sleep_hours = request.form['sleep_hours']
-        feel_fresh = request.form['feel_fresh']
-        physically_tired = request.form['physically_tired']
-        headache_fatigue = request.form['headache_fatigue']
-        health_rating = int(request.form['health_rating'])
-        regular_day_stress = int(request.form['regular_day_stress'])
-        exam_stress = int(request.form['exam_stress'])
-        daily_study_hours = request.form['daily_study_hours']
-        most_stress_subject = request.form['most_stress_subject']
-        easiest_subject = request.form['easiest_subject']
-        preferred_morning_subject = request.form['preferred_morning_subject']
-        preferred_afternoon_subject = request.form['preferred_afternoon_subject']
-        best_study_time = request.form['best_study_time']
-        need_more_breaks = request.form['need_more_breaks']
-        scheduling_suggestions = request.form['scheduling_suggestions']
-        stress_comments = request.form['stress_comments']
+        sleep_hours = request.form.get('sleep_hours', '').strip()
+        feel_fresh = request.form.get('feel_fresh', '').strip()
+        physically_tired = request.form.get('physically_tired', '').strip()
+        headache_fatigue = request.form.get('headache_fatigue', '').strip()
+        
+        try:
+            health_rating = int(request.form.get('health_rating', '5'))
+            regular_day_stress = int(request.form.get('regular_day_stress', '5'))
+            exam_stress = int(request.form.get('exam_stress', '5'))
+        except ValueError:
+            health_rating = 5
+            regular_day_stress = 5
+            exam_stress = 5
+
+        daily_study_hours = request.form.get('daily_study_hours', '').strip()
+        most_stress_subject = request.form.get('most_stress_subject', '').strip()
+        easiest_subject = request.form.get('easiest_subject', '').strip()
+        preferred_morning_subject = request.form.get('preferred_morning_subject', '').strip()
+        preferred_afternoon_subject = request.form.get('preferred_afternoon_subject', '').strip()
+        best_study_time = request.form.get('best_study_time', '').strip()
+        need_more_breaks = request.form.get('need_more_breaks', '').strip()
+        scheduling_suggestions = request.form.get('scheduling_suggestions', '').strip()
+        stress_comments = request.form.get('stress_comments', '').strip()
+
+        # Compute stress score: Higher score means more stressed
+        # scale: health_rating (1-10, lower health is more stressed, max (10-1)*5 = 45)
+        # regular_day_stress (1-10, max 50)
+        # exam_stress (1-10, max 50)
+        stress_score = (10 - health_rating) * 5 + regular_day_stress * 5 + exam_stress * 5
+        if physically_tired == 'Yes':
+            stress_score += 10
+        if headache_fatigue == 'Yes':
+            stress_score += 10
+        if feel_fresh == 'No':
+            stress_score += 10
 
         cursor.execute("DELETE FROM stress_forms WHERE student_id = %s", (student_id,))
         cursor.execute(
             """INSERT INTO stress_forms (student_id, sleep_hours, feel_fresh, physically_tired, headache_fatigue, health_rating,
                                         regular_day_stress, exam_stress, daily_study_hours, most_stress_subject, easiest_subject,
                                         preferred_morning_subject, preferred_afternoon_subject, best_study_time, need_more_breaks,
-                                        scheduling_suggestions, stress_comments)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                        scheduling_suggestions, stress_comments, stress_score)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (student_id, sleep_hours, feel_fresh, physically_tired, headache_fatigue, health_rating,
              regular_day_stress, exam_stress, daily_study_hours, most_stress_subject, easiest_subject,
              preferred_morning_subject, preferred_afternoon_subject, best_study_time, need_more_breaks,
-             scheduling_suggestions, stress_comments)
+             scheduling_suggestions, stress_comments, stress_score)
         )
         conn.commit()
         success_msg = "Stress preferences submitted successfully!"
@@ -862,14 +957,23 @@ def faculty_register():
     conn.close()
 
     if request.method == 'POST':
-        employee_id = request.form['employee_id'].upper().strip()
-        full_name = request.form['full_name'].strip()
-        email = request.form['email'].strip()
-        password = request.form['password']
-        phone = request.form['phone'].strip()
-        department = request.form['department'].upper().strip()
-        subject_name = request.form['subject_name'].strip()
-        col_id = int(request.form['college_id'])
+        employee_id = request.form.get('employee_id', '').upper().strip()
+        full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        phone = request.form.get('phone', '').strip()
+        department = request.form.get('department', '').upper().strip()
+        subject_name = request.form.get('subject_name', '').strip()
+        
+        try:
+            col_id = int(request.form.get('college_id', '0'))
+        except ValueError:
+            return render_template('faculty_register.html', college=college, error="Invalid College ID.")
+
+        if not employee_id or not full_name or not email or not password or not phone or not department or not subject_name or not col_id:
+            return render_template('faculty_register.html', college=college, error="All fields are required.")
+
+        hashed_password = generate_password_hash(password)
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -877,7 +981,7 @@ def faculty_register():
             cursor.execute(
                 """INSERT INTO faculty (college_id, employee_id, full_name, email, password, phone, department, subject_name)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                (col_id, employee_id, full_name, email, password, phone, department, subject_name)
+                (col_id, employee_id, full_name, email, hashed_password, phone, department, subject_name)
             )
             conn.commit()
             return redirect(url_for('faculty_login', college_id=col_id))
@@ -904,10 +1008,16 @@ def faculty_login():
 
     if request.method == 'POST':
         login_type = request.form.get('login_type', 'otp')
-        col_id = int(request.form['college_id'])
+        
+        try:
+            col_id = int(request.form.get('college_id', '0'))
+        except ValueError:
+            return render_template('faculty_login.html', college=college, error="Invalid College ID.")
 
         if login_type == 'otp':
-            phone = request.form['phone'].strip()
+            phone = request.form.get('phone', '').strip()
+            if not phone:
+                return render_template('faculty_login.html', college=college, error="Phone number is required.")
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
             cursor.execute("SELECT * FROM faculty WHERE phone = %s AND college_id = %s", (phone, col_id))
@@ -933,8 +1043,11 @@ def faculty_login():
                 return render_template('faculty_login.html', college=college, error="Phone number is not registered for this college.")
         
         elif login_type == 'password':
-            email = request.form['email'].strip()
-            password = request.form['password']
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '')
+
+            if not email or not password:
+                return render_template('faculty_login.html', college=college, error="Email and password are required.")
 
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
@@ -943,7 +1056,7 @@ def faculty_login():
             cursor.close()
             conn.close()
 
-            if faculty and faculty['password'] == password:
+            if faculty and check_password_hash(faculty['password'], password):
                 session['faculty_id'] = faculty['id']
                 session['faculty_name'] = faculty['full_name']
                 session['college_id'] = col_id
@@ -1187,16 +1300,21 @@ def admin_view_timetable():
 
     selected_branch = admin_branch if admin_branch else request.args.get('branch', '')
     selected_section = request.args.get('section_name', '')
-    selected_year = int(request.args.get('year_level', '1'))
+    try:
+        selected_year = int(request.args.get('year_level', '1'))
+    except ValueError:
+        selected_year = 1
     
     valid_sem_a = (selected_year - 1) * 2 + 1
     valid_sem_b = (selected_year - 1) * 2 + 2
     
-    selected_semester = request.args.get('semester', '')
-    if not selected_semester or int(selected_semester) not in (valid_sem_a, valid_sem_b):
+    selected_semester_str = request.args.get('semester', '')
+    try:
+        selected_semester = int(selected_semester_str)
+        if selected_semester not in (valid_sem_a, valid_sem_b):
+            selected_semester = valid_sem_a
+    except ValueError:
         selected_semester = valid_sem_a
-    else:
-        selected_semester = int(selected_semester)
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -1577,16 +1695,29 @@ def generate_timetable():
     cursor.execute("SELECT * FROM faculty WHERE college_id = %s", (college_id,))
     faculties = cursor.fetchall()
 
-    # Fetch student stress factors
+    # Fetch student stress factors and morning/afternoon preference votes
     cursor.execute(
-        """SELECT sf.most_stress_subject, COUNT(*) as count 
+        """SELECT sf.most_stress_subject, sf.preferred_morning_subject, sf.preferred_afternoon_subject, sf.best_study_time, COUNT(*) as count 
            FROM stress_forms sf 
            JOIN students s ON sf.student_id = s.id 
            WHERE s.college_id = %s AND s.branch = %s AND s.year_level = %s AND s.semester = %s AND s.section_name = %s
-           GROUP BY sf.most_stress_subject""",
+           GROUP BY sf.most_stress_subject, sf.preferred_morning_subject, sf.preferred_afternoon_subject, sf.best_study_time""",
         (college_id, branch, year_level, semester, section_name)
     )
-    stress_stats = {row['most_stress_subject'].lower(): row['count'] for row in cursor.fetchall() if row['most_stress_subject']}
+    db_rows = cursor.fetchall()
+    
+    stress_stats = {}
+    morning_prefs = {}
+    afternoon_prefs = {}
+    
+    for row in db_rows:
+        if row['most_stress_subject']:
+            stress_stats[row['most_stress_subject'].lower()] = stress_stats.get(row['most_stress_subject'].lower(), 0) + row['count']
+        if row['preferred_morning_subject']:
+            morning_prefs[row['preferred_morning_subject'].lower()] = morning_prefs.get(row['preferred_morning_subject'].lower(), 0) + row['count']
+        if row['preferred_afternoon_subject']:
+            afternoon_prefs[row['preferred_afternoon_subject'].lower()] = afternoon_prefs.get(row['preferred_afternoon_subject'].lower(), 0) + row['count']
+
     cursor.close()
 
     # Sort faculties by matching priority and experience
@@ -1608,12 +1739,14 @@ def generate_timetable():
     slots_needed = {sub['id']: sub['periods_per_week'] for sub in subjects}
     schedule = {day: {f'period{p}': 'FREE' for p in range(1, 8)} for day in days}
 
-    # Checks if faculty is busy in another branch/section at that day/period
+    # Checks if faculty is busy in another branch/section at that day/period (ignoring current section being regenerated)
     def is_faculty_busy(fac_name, day, period):
         check_conn = get_db_connection()
         chk_cursor = check_conn.cursor()
-        query = f"SELECT {period} FROM timetable WHERE college_id = %s AND day_name = %s"
-        chk_cursor.execute(query, (college_id, day))
+        query = f"""SELECT {period} FROM timetable 
+                    WHERE college_id = %s AND day_name = %s 
+                    AND NOT (branch = %s AND section_name = %s AND year_level = %s AND semester = %s)"""
+        chk_cursor.execute(query, (college_id, day, branch, section_name, year_level, semester))
         rows = chk_cursor.fetchall()
         chk_cursor.close()
         check_conn.close()
@@ -1622,7 +1755,7 @@ def generate_timetable():
                 return True
         return False
 
-    # Sort subjects by stress level
+    # Sort subjects by stress level (most stressful first)
     sorted_subs = sorted(subjects, key=lambda x: stress_stats.get(x['subject_name'].lower(), 0), reverse=True)
 
     for sub in sorted_subs:
@@ -1631,6 +1764,9 @@ def generate_timetable():
         assigned_fac = fac_list[0]['full_name'] if fac_list else "TBD"
 
         is_stressful = stress_stats.get(sub['subject_name'].lower(), 0) > 0
+        student_pref_morning = morning_prefs.get(sub['subject_name'].lower(), 0) > afternoon_prefs.get(sub['subject_name'].lower(), 0)
+        student_pref_afternoon = afternoon_prefs.get(sub['subject_name'].lower(), 0) > morning_prefs.get(sub['subject_name'].lower(), 0)
+
         fac_pref_morning = False
         fac_pref_afternoon = False
 
@@ -1648,14 +1784,19 @@ def generate_timetable():
                 break
             
             # Period placement: stressful or morning preference -> morning slots; afternoon preference -> afternoon slots
-            if fac_pref_morning or is_stressful:
+            if fac_pref_morning or is_stressful or student_pref_morning:
                 periods_pool = ['period1', 'period2', 'period3', 'period4', 'period5', 'period6', 'period7']
-            elif fac_pref_afternoon:
+            elif fac_pref_afternoon or student_pref_afternoon:
                 periods_pool = ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
             else:
                 periods_pool = ['period4', 'period5', 'period6', 'period7', 'period1', 'period2', 'period3']
 
             for period in periods_pool:
+                # Prevent scheduling the same subject twice on the same day if possible
+                day_already_has_subject = any(sub['subject_name'] in schedule[day][p] for p in schedule[day] if schedule[day][p] != 'FREE')
+                if day_already_has_subject:
+                    break # Try next day
+
                 if schedule[day][period] == 'FREE':
                     if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
                         continue
@@ -1663,7 +1804,7 @@ def generate_timetable():
                     scheduled_count += 1
                     break
 
-        # Fallback if slots not filled
+        # Fallback if slots not filled (relax duplicate day restriction)
         if scheduled_count < periods_to_fill:
             for day in days:
                 if scheduled_count >= periods_to_fill:
@@ -1676,6 +1817,17 @@ def generate_timetable():
                         scheduled_count += 1
                         if scheduled_count >= periods_to_fill:
                             break
+
+    total_needed = sum(sub['periods_per_week'] for sub in subjects)
+    total_available = len(days) * 7
+    warnings = []
+    if total_needed > total_available:
+        warnings.append(f"Warning: Need {total_needed} slots but only {total_available} are available. Reduce periods_per_week on subjects.")
+        
+    for sub in subjects:
+        filled = sum(1 for d in days for p in range(1, 8) if sub['subject_name'] in schedule[d][f'period{p}'])
+        if filled < sub['periods_per_week']:
+            warnings.append(f"Warning: {sub['subject_name']} only scheduled for {filled}/{sub['periods_per_week']} required slots!")
 
     save_conn = get_db_connection()
     save_cursor = save_conn.cursor()
@@ -1699,7 +1851,10 @@ def generate_timetable():
     save_cursor.close()
     save_conn.close()
 
-    session['gen_success'] = f"AI Schedule Generated for {branch} Section {section_name} (Draft)!"
+    if warnings:
+        session['gen_success'] = f"AI Schedule Generated for {branch} Section {section_name} (Draft) with warnings: " + " | ".join(warnings)
+    else:
+        session['gen_success'] = f"AI Schedule Generated for {branch} Section {section_name} (Draft)!"
     return redirect(url_for('manage_periods'))
 
 # ----------------- AI ENGINE: DYNAMIC LEAVE SUBSTITUTION & SWAPPING -----------------
@@ -1715,11 +1870,42 @@ def absence_request():
     cursor = conn.cursor(dictionary=True)
 
     if request.method == 'POST':
-        absent_date_str = request.form['absent_date']
-        start_period = int(request.form['start_period'])
-        end_period = int(request.form['end_period'])
+        absent_date_str = request.form.get('absent_date', '').strip()
         
-        absent_date = datetime.strptime(absent_date_str, "%Y-%m-%d")
+        try:
+            start_period = int(request.form.get('start_period', '1'))
+            end_period = int(request.form.get('end_period', '1'))
+        except ValueError:
+            # Fetch common data to render error properly
+            cursor.execute("SELECT * FROM faculty WHERE id = %s", (faculty_id,))
+            faculty = cursor.fetchone()
+            cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
+            college = cursor.fetchone()
+            cursor.execute("""
+                SELECT ar.*, f.full_name FROM absence_requests ar 
+                JOIN faculty f ON ar.faculty_id = f.id 
+                WHERE ar.faculty_id = %s ORDER BY ar.id DESC""", (faculty_id,))
+            my_requests = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return render_template('absence_request.html', college=college, faculty=faculty, my_requests=my_requests, error="Periods must be integers")
+        
+        try:
+            absent_date = datetime.strptime(absent_date_str, "%Y-%m-%d")
+        except ValueError:
+            cursor.execute("SELECT * FROM faculty WHERE id = %s", (faculty_id,))
+            faculty = cursor.fetchone()
+            cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
+            college = cursor.fetchone()
+            cursor.execute("""
+                SELECT ar.*, f.full_name FROM absence_requests ar 
+                JOIN faculty f ON ar.faculty_id = f.id 
+                WHERE ar.faculty_id = %s ORDER BY ar.id DESC""", (faculty_id,))
+            my_requests = cursor.fetchall()
+            cursor.close()
+            conn.close()
+            return render_template('absence_request.html', college=college, faculty=faculty, my_requests=my_requests, error="Invalid date format. Use YYYY-MM-DD")
+
         day_of_week = absent_date.strftime('%A')
 
         cursor.execute("SELECT * FROM faculty WHERE id = %s", (faculty_id,))
