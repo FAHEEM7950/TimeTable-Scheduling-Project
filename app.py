@@ -7,8 +7,12 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 
+# Load environment variables from .env file (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "AI_Scheduling_Super_Key_2026")
+app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 app.config.update(
     SESSION_COOKIE_SECURE=False,     # True in production with HTTPS
@@ -31,7 +35,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get("DB_HOST", "localhost"),
         user=os.environ.get("DB_USER", "root"),
-        password=os.environ.get("DB_PASSWORD", "@Faheem7950"),
+        password=os.environ.get("DB_PASSWORD", ""),
         database=os.environ.get("DB_NAME", "timetable_db")
     )
 
