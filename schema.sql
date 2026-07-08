@@ -209,6 +209,37 @@ CREATE TABLE dashboard_stats (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 15. Venues Table
+CREATE TABLE venues (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    college_id INT NOT NULL,
+    building_name VARCHAR(255) NOT NULL,
+    room_number VARCHAR(100) NOT NULL,
+    room_type VARCHAR(100) NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    floor_number VARCHAR(50) NOT NULL,
+    max_capacity INT NOT NULL,
+    has_projector BOOLEAN DEFAULT FALSE,
+    has_ac BOOLEAN DEFAULT FALSE,
+    has_smart_board BOOLEAN DEFAULT FALSE,
+    is_wifi_available BOOLEAN DEFAULT FALSE,
+    room_status VARCHAR(50) DEFAULT 'Available',
+    remarks TEXT NULL,
+    UNIQUE KEY unique_venue (college_id, building_name, room_number),
+    FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
+);
+
+-- 16. Timetable Settings Table
+CREATE TABLE timetable_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    college_id INT NOT NULL UNIQUE,
+    start_time TIME NOT NULL DEFAULT '09:00:00',
+    period_duration INT NOT NULL DEFAULT 60,
+    break_after_period INT NOT NULL DEFAULT 3,
+    break_duration INT NOT NULL DEFAULT 60,
+    FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
+);
+
 -- Constraints
 ALTER TABLE faculty ADD CONSTRAINT unique_faculty_id UNIQUE (college_id, employee_id);
 ALTER TABLE students ADD CONSTRAINT unique_student_roll UNIQUE (college_id, roll_no);

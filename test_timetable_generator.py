@@ -44,6 +44,21 @@ def setup_test_data():
         (college_id, "CSE", 3, "B")
     )
 
+    print("--- 3.5. Seeding Test Venues ---")
+    venues = [
+        ("Academic Block A", "A-101", "Normal Classroom", "CSE", "1st", 65),
+        ("Academic Block A", "A-102", "Normal Classroom", "CSE", "1st", 65),
+        ("Science Block", "S-204", "Normal Classroom", "Common (Shared)", "2nd", 70),
+        ("Science Block", "Lab-305", "Computer Lab", "CSE", "3rd", 80)
+    ]
+    for v in venues:
+        cursor.execute(
+            """INSERT INTO venues 
+               (college_id, building_name, room_number, room_type, department, floor_number, max_capacity, room_status)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, 'Available')""",
+            (college_id, v[0], v[1], v[2], v[3], v[4], v[5])
+        )
+
     print("--- 4. Registering Faculty Members ---")
     # Let's register 4 teachers with different profiles
     faculties = [
@@ -149,6 +164,10 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
     cursor.execute("SELECT * FROM faculty WHERE college_id = %s", (college_id,))
     faculties = cursor.fetchall()
 
+    # Fetch venues
+    cursor.execute("SELECT * FROM venues WHERE college_id = %s AND room_status = 'Available'", (college_id,))
+    all_venues = cursor.fetchall()
+
     # Fetch student stress factors
     cursor.execute(
         """SELECT sf.most_stress_subject, COUNT(*) as count 
@@ -182,8 +201,6 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
     def is_faculty_busy(fac_name, day, period):
         check_conn = get_connection()
         chk_cursor = check_conn.cursor()
-        # Query checks if the faculty is already assigned in ANY other section's timetable for this college/day/period
-        # We check if the period contains the faculty name (e.g. "Theory of Computation (Dr. Alan Turing)")
         query = f"SELECT {period} FROM timetable WHERE college_id = %s AND day_name = %s"
         chk_cursor.execute(query, (college_id, day))
         rows = chk_cursor.fetchall()
@@ -194,6 +211,47 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
                 return True
         return False
 
+    # Checks if classroom is busy in another branch/section at that day/period
+    def is_room_busy(room_num, day, period):
+        check_conn = get_connection()
+        chk_cursor = check_conn.cursor()
+        query = f"SELECT {period} FROM timetable WHERE college_id = %s AND day_name = %s"
+        chk_cursor.execute(query, (college_id, day))
+        rows = chk_cursor.fetchall()
+        chk_cursor.close()
+        check_conn.close()
+        for r in rows:
+            if r[0] and f"[{room_num}]" in r[0]:
+                return True
+        return False
+
+    # Find candidate classrooms for this subject
+    def get_candidate_classrooms(subj_name, branch_name):
+        is_lab_subject = "lab" in subj_name.lower() or "laboratory" in subj_name.lower() or "practical" in subj_name.lower()
+        
+        candidates = []
+        for v in all_venues:
+            # 1. Capacity check (mock class strength = 60)
+            if v['max_capacity'] < 60:
+                continue
+
+            # 2. Lab matching rule
+            is_lab_room = "lab" in v['room_type'].lower()
+            if is_lab_subject and not is_lab_room:
+                continue
+            if not is_lab_subject and is_lab_room:
+                continue
+
+            # 3. Department matching (shared rooms or same department)
+            if v['department'] != 'Common (Shared)' and v['department'].lower() != branch_name.lower():
+                continue
+
+            candidates.append(v)
+        
+        # Sort candidates to prefer departmental rooms first, then shared
+        candidates.sort(key=lambda x: 0 if x['department'].lower() == branch_name.lower() else 1)
+        return candidates
+
     # Sort subjects by stress level
     sorted_subs = sorted(subjects, key=lambda x: stress_stats.get(x['subject_name'].lower(), 0), reverse=True)
 
@@ -201,6 +259,9 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
         periods_to_fill = slots_needed[sub['id']]
         fac_list = subject_faculty_map.get(sub['id'], [])
         assigned_fac = fac_list[0]['full_name'] if fac_list else "TBD"
+
+        # Determine classroom candidates
+        venue_candidates = get_candidate_classrooms(sub['subject_name'], branch)
 
         is_stressful = stress_stats.get(sub['subject_name'].lower(), 0) > 0
         fac_pref_morning = False
@@ -231,7 +292,15 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
                 if schedule[day][period] == 'FREE':
                     if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
                         continue
-                    schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
+
+                    # Find a free room from candidates
+                    assigned_room = "TBD Room"
+                    for room_candidate in venue_candidates:
+                        if not is_room_busy(room_candidate['room_number'], day, period):
+                            assigned_room = room_candidate['room_number']
+                            break
+
+                    schedule[day][period] = f"{sub['subject_name']} ({assigned_fac}) [{assigned_room}]"
                     scheduled_count += 1
                     break
 
@@ -244,7 +313,15 @@ def run_timetable_generation(college_id, branch, year_level, semester, section_n
                     if schedule[day][period] == 'FREE':
                         if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
                             continue
-                        schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
+
+                        # Find a free room from candidates
+                        assigned_room = "TBD Room"
+                        for room_candidate in venue_candidates:
+                            if not is_room_busy(room_candidate['room_number'], day, period):
+                                assigned_room = room_candidate['room_number']
+                                break
+
+                        schedule[day][period] = f"{sub['subject_name']} ({assigned_fac}) [{assigned_room}]"
                         scheduled_count += 1
                         if scheduled_count >= periods_to_fill:
                             break
@@ -293,6 +370,9 @@ def verify_and_analyze(college_id):
     
     # Check 1: Overlap / Conflict check
     conflict_count = 0
+    room_overlap_count = 0
+    capacity_violation_count = 0
+    lab_misallocation_count = 0
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     for day in days:
         for p_idx in range(7):
@@ -301,17 +381,73 @@ def verify_and_analyze(college_id):
             sec_b_val = timetable_map['B'][day][p_idx]
             
             # Extract teacher names
-            teacher_a = sec_a_val.split('(')[-1].replace(')', '') if '(' in sec_a_val else None
-            teacher_b = sec_b_val.split('(')[-1].replace(')', '') if '(' in sec_b_val else None
+            teacher_a = sec_a_val.split('(')[-1].split(')')[0] if '(' in sec_a_val else None
+            teacher_b = sec_b_val.split('(')[-1].split(')')[0] if '(' in sec_b_val else None
             
             if teacher_a and teacher_b and teacher_a == teacher_b and teacher_a != "TBD":
                 print(f"[CONFLICT DETECTED] {day} {p_name}: '{teacher_a}' is scheduled in BOTH Section A ({sec_a_val}) and Section B ({sec_b_val})!")
                 conflict_count += 1
 
+            # Extract room numbers
+            room_a = sec_a_val.split('[')[-1].replace(']', '') if '[' in sec_a_val else None
+            room_b = sec_b_val.split('[')[-1].replace(']', '') if '[' in sec_b_val else None
+
+            if room_a and room_b and room_a == room_b and room_a != "TBD Room":
+                print(f"[ROOM OVERLAP DETECTED] {day} {p_name}: Room '{room_a}' is occupied by BOTH Section A ({sec_a_val}) and Section B ({sec_b_val})!")
+                room_overlap_count += 1
+
+            # Validate room types and capacities
+            # CSE Year 3 Section A and B have 60 students. A-101 capacity is 65, S-204 is 70, Lab-305 is 80.
+            # TOC, Compiler, Computer Architecture, OS, Python are the subjects.
+            # Python programming is a lab/practical style or contains "python" (Normal room or Lab depending on type check)
+            for val, sec_label in [(sec_a_val, 'A'), (sec_b_val, 'B')]:
+                if "[" in val:
+                    sub_name = val.split(' (')[0]
+                    room_no = val.split('[')[-1].replace(']', '')
+                    
+                    # Fetch capacity & room type of the assigned room
+                    chk_conn = get_connection()
+                    chk_cur = chk_conn.cursor(dictionary=True)
+                    chk_cur.execute("SELECT * FROM venues WHERE room_number = %s AND college_id = %s", (room_no, college_id))
+                    v_info = chk_cur.fetchone()
+                    chk_cur.close()
+                    chk_conn.close()
+
+                    if v_info:
+                        # Capacity check (Section strength = 60)
+                        if v_info['max_capacity'] < 60:
+                            print(f"[CAPACITY VIOLATION] Room {room_no} has capacity {v_info['max_capacity']} but section {sec_label} needs 60!")
+                            capacity_violation_count += 1
+                        
+                        # Lab subject vs Lab room check
+                        is_lab_subj = "lab" in sub_name.lower() or "laboratory" in sub_name.lower() or "practical" in sub_name.lower()
+                        is_lab_rm = "lab" in v_info['room_type'].lower()
+                        if is_lab_subj and not is_lab_rm:
+                            print(f"[LAB MISALLOCATION] Lab subject '{sub_name}' allocated to non-lab room '{room_no}' ({v_info['room_type']})!")
+                            lab_misallocation_count += 1
+                        elif not is_lab_subj and is_lab_rm:
+                            print(f"[LAB MISALLOCATION] Non-lab subject '{sub_name}' allocated to lab room '{room_no}'!")
+                            lab_misallocation_count += 1
+
     if conflict_count == 0:
         print("[SUCCESS] Conflict Check: 0 faculty collisions detected! No teacher is double-booked.")
     else:
         print(f"[FAILED] Conflict Check: Found {conflict_count} faculty collision(s)!")
+
+    if room_overlap_count == 0:
+        print("[SUCCESS] Classroom Overlap Check: 0 classroom collisions detected! No room is double-booked.")
+    else:
+        print(f"[FAILED] Classroom Overlap Check: Found {room_overlap_count} classroom collision(s)!")
+
+    if capacity_violation_count == 0:
+        print("[SUCCESS] Classroom Capacity Check: 0 capacity violations detected! All rooms fit section strength.")
+    else:
+        print(f"[FAILED] Classroom Capacity Check: Found {capacity_violation_count} capacity violation(s)!")
+
+    if lab_misallocation_count == 0:
+        print("[SUCCESS] Classroom Type Check: 0 misallocations detected! Labs assigned to labs, theories to normal classes.")
+    else:
+        print(f"[FAILED] Classroom Type Check: Found {lab_misallocation_count} type misallocation(s)!")
 
     # Check 2: Stress-aware placement validation
     # TOC was voted high stress by Section A, Compiler Design by Section B.

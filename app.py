@@ -6,13 +6,11 @@ import random
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
-
-# Load environment variables from .env file (for local development)
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv()  # This loads variables from .env file
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
+app.secret_key = os.environ.get("SECRET_KEY", "AI_Scheduling_Super_Key_2026")
 
 app.config.update(
     SESSION_COOKIE_SECURE=False,     # True in production with HTTPS
@@ -30,7 +28,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Database Connection Helper
+app.secret_key = os.environ.get("SECRET_KEY", "fallback-key-change-me")
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get("DB_HOST", "localhost"),

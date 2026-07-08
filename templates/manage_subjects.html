@@ -30,6 +30,7 @@
             <ul class="sidebar-menu">
                 <li><a href="{{ dash_url }}" class="sidebar-link">Overview</a></li>
                 <li><a href="/manage_subjects" class="sidebar-link active">Manage Subjects</a></li>
+                <li><a href="/manage_venues" class="sidebar-link">Manage Classroom / Venues</a></li>
                 <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
@@ -48,6 +49,76 @@
             {% if error %}
                 <div class="message-box message-error">{{ error }}</div>
             {% endif %}
+
+            <!-- ⏰ Timing Configuration Card -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 0.4rem; color: var(--accent);">⏰ Timetable Timing Configuration</h3>
+                <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.5rem;">Set when the first period starts, how long each period runs, and when the lunch break occurs.</p>
+
+                <form method="POST" action="/save_timing_settings" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="start_time">Start Time (Period 1 begins)</label>
+                        <input type="time" id="start_time" name="start_time"
+                               value="{{ timing_settings.start_time | time_to_str }}"
+                               required class="form-control">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="period_duration">Period Duration (minutes)</label>
+                        <select id="period_duration" name="period_duration" class="form-control">
+                            <option value="40" {% if timing_settings.period_duration == 40 %}selected{% endif %}>40 minutes</option>
+                            <option value="45" {% if timing_settings.period_duration == 45 %}selected{% endif %}>45 minutes</option>
+                            <option value="50" {% if timing_settings.period_duration == 50 %}selected{% endif %}>50 minutes</option>
+                            <option value="55" {% if timing_settings.period_duration == 55 %}selected{% endif %}>55 minutes</option>
+                            <option value="60" {% if timing_settings.period_duration == 60 %}selected{% endif %}>60 minutes (1 hour)</option>
+                            <option value="75" {% if timing_settings.period_duration == 75 %}selected{% endif %}>75 minutes</option>
+                            <option value="90" {% if timing_settings.period_duration == 90 %}selected{% endif %}>90 minutes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="break_after_period">Lunch Break After Period</label>
+                        <select id="break_after_period" name="break_after_period" class="form-control">
+                            {% for p in range(1, 7) %}
+                                <option value="{{ p }}" {% if timing_settings.break_after_period == p %}selected{% endif %}>After Period {{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="break_duration">Break Duration (minutes)</label>
+                        <select id="break_duration" name="break_duration" class="form-control">
+                            <option value="30" {% if timing_settings.break_duration == 30 %}selected{% endif %}>30 minutes</option>
+                            <option value="45" {% if timing_settings.break_duration == 45 %}selected{% endif %}>45 minutes</option>
+                            <option value="60" {% if timing_settings.break_duration == 60 %}selected{% endif %}>60 minutes (1 hour)</option>
+                            <option value="90" {% if timing_settings.break_duration == 90 %}selected{% endif %}>90 minutes</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 0;">
+                        <button type="submit" class="btn" style="width: 100%;">💾 Save Timing</button>
+                    </div>
+                </form>
+
+                <!-- Live Period Preview -->
+                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-primary); border-radius: 8px; border: 1px solid var(--glass-border);">
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Current Period Schedule Preview</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                        {% for i in range(7) %}
+                            <span style="background: var(--accent); color: #fff; padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                P{{ i + 1 }}: {{ period_labels[i] }}
+                            </span>
+                            {% if i + 1 == timing_settings.break_after_period %}
+                                <span style="background: var(--bg-secondary); border: 1px dashed var(--glass-border); padding: 0.3rem 0.65rem; border-radius: 20px; font-size: 0.78rem; color: var(--text-secondary);">
+                                    🍽 Lunch ({{ timing_settings.break_duration }} min)
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
 
             <!-- Add Subject Form Card -->
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2.5rem;">
