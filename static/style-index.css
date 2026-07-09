@@ -61,16 +61,19 @@
 }
 
 body {
-    background-color: var(--bg-primary);
-    background-image: 
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+    background:
+        radial-gradient(circle at 20% 20%,rgba(59,130,246,.25),transparent 25%),
+        radial-gradient(circle at 80% 10%,rgba(168,85,247,.25),transparent 25%),
+        radial-gradient(circle at 50% 90%,rgba(16,185,129,.20),transparent 20%),
+        #020617;
     color: var(--text-primary);
-    font-family: 'Outfit', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+}
+
+
 
 /* Header & Navigation */
 header {

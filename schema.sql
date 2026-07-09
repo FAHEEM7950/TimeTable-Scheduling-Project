@@ -94,7 +94,9 @@ CREATE TABLE subjects (
     semester INT NOT NULL,
     section_name VARCHAR(50) NOT NULL,
     periods_per_week INT DEFAULT 3,
-    FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE
+    venue_id INT DEFAULT NULL,
+    FOREIGN KEY (college_id) REFERENCES colleges(id) ON DELETE CASCADE,
+    FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL
 );
 
 -- 8. Student Stress Forms Table

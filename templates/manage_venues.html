@@ -3,9 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Classroom & Venues - {{ college.college_name }}</title>
+    <title>Manage Classroom &amp; Venues - {{ college.college_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style-index.css') }}">
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <style>
+        /* ── Assignment Panel ── */
+        .assign-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+        }
+        .assign-panel h3 {
+            margin-bottom: 0.4rem;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+        .assign-panel p.subtitle {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-bottom: 1.4rem;
+        }
+        .assign-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        @media (max-width: 700px) {
+            .assign-form-row { grid-template-columns: 1fr; }
+        }
+
+        /* ── Subject List Table ── */
+        .subject-assign-table th,
+        .subject-assign-table td {
+            font-size: 0.85rem;
+            padding: 0.6rem 0.75rem;
+        }
+
+        /* ── Venue badge on subjects ── */
+        .venue-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(99, 179, 237, 0.18);
+            color: #63b3ed;
+            border: 1px solid rgba(99,179,237,0.35);
+            padding: 0.22rem 0.55rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .venue-none {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-style: italic;
+        }
+
+        /* ── Assigned-subject chips in venue table ── */
+        .subject-chip {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.18);
+            color: #a78bfa;
+            border: 1px solid rgba(139,92,246,0.3);
+            padding: 0.18rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin: 0.1rem 0.15rem 0.1rem 0;
+        }
+    </style>
 </head>
 <body>
     <script>
@@ -31,7 +98,7 @@
                 <li><a href="{{ dash_url }}" class="sidebar-link">Overview</a></li>
                 <li><a href="/manage_subjects" class="sidebar-link">Manage Subjects</a></li>
                 <li><a href="/manage_venues" class="sidebar-link active">Manage Classroom / Venues</a></li>
-                <li><a href="/manage_periods" class="sidebar-link">Manage Periods & Generate</a></li>
+                <li><a href="/manage_periods" class="sidebar-link">Manage Periods &amp; Generate</a></li>
                 <li><a href="/publish_timetable" class="sidebar-link">Publish Timetable</a></li>
                 <li><a href="/admin_view_timetable" class="sidebar-link">View Timetable</a></li>
                 <li><a href="/manage_sections" class="sidebar-link">Manage Sections</a></li>
@@ -50,7 +117,9 @@
                 <div class="message-box message-error">{{ error }}</div>
             {% endif %}
 
-            <!-- Add Venue Form Card -->
+            <!-- ══════════════════════════════════════ -->
+            <!--  SECTION 1 · Add New Venue / Classroom -->
+            <!-- ══════════════════════════════════════ -->
             <div style="background: var(--bg-secondary); border: 1px solid var(--glass-border); border-radius: 12px; padding: 2rem; margin-bottom: 2.5rem;">
                 <h3 style="margin-bottom: 1.5rem; color: var(--accent);">Add New Venue / Classroom</h3>
                 <form method="POST" action="/manage_venues" style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -149,8 +218,105 @@
                 </form>
             </div>
 
-            <!-- Venues List -->
-            <h3 style="margin-bottom: 1rem; font-size: 1.2rem; font-weight: 600;">Registered Venues List</h3>
+            <!-- ══════════════════════════════════════════════ -->
+            <!--  SECTION 2 · Assign Classroom to a Subject    -->
+            <!-- ══════════════════════════════════════════════ -->
+            <div class="assign-panel">
+                <h3>🏷️ Assign Classroom to a Subject</h3>
+                <p class="subtitle">
+                    Select a subject and choose the classroom you want to permanently assign to it.
+                    The assigned room will appear in the generated timetable automatically.
+                </p>
+
+                {% if subjects and venues %}
+                <form method="POST" action="/assign_venue_to_subject">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <div class="assign-form-row">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="assign_subject_id">Subject</label>
+                            <select id="assign_subject_id" name="subject_id" class="form-control" required>
+                                <option value="" disabled selected>— Select a Subject —</option>
+                                {% for sub in subjects %}
+                                <option value="{{ sub.id }}">
+                                    [Yr{{ sub.year_level }} Sem{{ sub.semester }} {{ sub.section_name }}]
+                                    {{ sub.subject_code }} · {{ sub.subject_name }}
+                                    {% if sub.room_number %} ✅ ({{ sub.room_number }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="assign_venue_id">Classroom / Room</label>
+                            <select id="assign_venue_id" name="venue_id" class="form-control" required>
+                                <option value="">— Unassign (No Room) —</option>
+                                {% for v in venues %}
+                                <option value="{{ v.id }}">
+                                    {{ v.building_name }} · {{ v.room_number }} ({{ v.room_type }}, Cap: {{ v.max_capacity }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <button type="submit" class="btn" style="padding: 0.75rem 1.5rem; white-space: nowrap;">
+                                ✅ Assign Classroom
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% elif not venues %}
+                <p style="color: var(--text-secondary); font-style: italic;">
+                    ⚠️ No classrooms added yet. Add at least one classroom above before assigning.
+                </p>
+                {% elif not subjects %}
+                <p style="color: var(--text-secondary); font-style: italic;">
+                    ⚠️ No subjects registered yet. Add subjects in <a href="/manage_subjects">Manage Subjects</a> first.
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- ══════════════════════════════════════════════ -->
+            <!--  SECTION 3 · Subject → Classroom Assignments  -->
+            <!-- ══════════════════════════════════════════════ -->
+            {% if subjects %}
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">📋 Subject → Classroom Assignments</h3>
+            <div class="table-container" style="margin-bottom: 2.5rem;">
+                <table class="subject-assign-table">
+                    <thead>
+                        <tr>
+                            <th>Subject Code</th>
+                            <th>Subject Name</th>
+                            {% if not admin_branch %}<th>Branch</th>{% endif %}
+                            <th>Yr / Sem / Sec</th>
+                            <th>Assigned Classroom</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subjects %}
+                        <tr>
+                            <td><code>{{ sub.subject_code }}</code></td>
+                            <td><strong>{{ sub.subject_name }}</strong></td>
+                            {% if not admin_branch %}<td>{{ sub.branch }}</td>{% endif %}
+                            <td>Y{{ sub.year_level }} / S{{ sub.semester }} / {{ sub.section_name }}</td>
+                            <td>
+                                {% if sub.room_number %}
+                                    <span class="venue-badge">🏫 {{ sub.building_name }} · {{ sub.room_number }}</span>
+                                {% else %}
+                                    <span class="venue-none">Not assigned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- ══════════════════════════════════════ -->
+            <!--  SECTION 4 · Registered Venues List   -->
+            <!-- ══════════════════════════════════════ -->
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">🏢 Registered Classrooms / Venues</h3>
             <div class="table-container">
                 <table>
                     <thead>
@@ -163,6 +329,7 @@
                             <th>Capacity</th>
                             <th>Amenities</th>
                             <th>Status</th>
+                            <th>Assigned Subjects</th>
                             <th>Remarks</th>
                             <th>Action</th>
                         </tr>
@@ -197,9 +364,22 @@
                                             <span style="background: rgba(234, 179, 8, 0.2); color: #eab308; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">Reserved</span>
                                         {% endif %}
                                     </td>
+                                    <td>
+                                        {# List subjects assigned to this venue #}
+                                        {% set ns = namespace(found=false) %}
+                                        {% for sub in subjects %}
+                                            {% if sub.venue_id == venue.id %}
+                                                {% set ns.found = true %}
+                                                <span class="subject-chip">{{ sub.subject_name }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if not ns.found %}
+                                            <span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">None yet</span>
+                                        {% endif %}
+                                    </td>
                                     <td><small>{{ venue.remarks or '-' }}</small></td>
                                     <td>
-                                        <form method="POST" action="/delete_venue/{{ venue.id }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this classroom/venue?')">
+                                        <form method="POST" action="/delete_venue/{{ venue.id }}" style="display:inline;" onsubmit="return confirm('Delete this classroom? All subject assignments to this room will be cleared.')">
                                             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; width: auto;">Delete</button>
                                         </form>
@@ -208,7 +388,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="10" style="text-align: center; color: var(--text-secondary);">No classrooms or venues registered yet.</td>
+                                <td colspan="11" style="text-align: center; color: var(--text-secondary);">No classrooms or venues registered yet.</td>
                             </tr>
                         {% endif %}
                     </tbody>

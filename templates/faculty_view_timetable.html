@@ -37,6 +37,57 @@
                 Here is your weekly schedule. Slots where you are assigned to teach are highlighted.
             </p>
 
+            <!-- Select Timetable Filter Bar -->
+            <form method="GET" class="filter-bar" style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 1.5rem; background: var(--bg-secondary); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="branch" style="font-weight: 600;">Department/Branch:</label>
+                    <select id="branch" name="branch" disabled style="background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); cursor: not-allowed; border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 4px;">
+                        <option value="{{ selected_branch }}" selected>{{ selected_branch }}</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="year_level" style="font-weight: 600;">Year:</label>
+                    <select id="year_level" name="year_level" onchange="this.form.submit()" style="background: var(--bg-primary); color: var(--text-main); border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 4px;">
+                        <option value="1" {% if selected_year == 1 %}selected{% endif %}>Year 1</option>
+                        <option value="2" {% if selected_year == 2 %}selected{% endif %}>Year 2</option>
+                        <option value="3" {% if selected_year == 3 %}selected{% endif %}>Year 3</option>
+                        <option value="4" {% if selected_year == 4 %}selected{% endif %}>Year 4</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="semester" style="font-weight: 600;">Semester:</label>
+                    <select id="semester" name="semester" onchange="this.form.submit()" style="background: var(--bg-primary); color: var(--text-main); border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 4px;">
+                        {% set sem_a = (selected_year - 1) * 2 + 1 %}
+                        {% set sem_b = (selected_year - 1) * 2 + 2 %}
+                        <option value="{{ sem_a }}" {% if selected_semester == sem_a %}selected{% endif %}>Semester {{ sem_a }}</option>
+                        <option value="{{ sem_b }}" {% if selected_semester == sem_b %}selected{% endif %}>Semester {{ sem_b }}</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="section_name" style="font-weight: 600;">Section:</label>
+                    <select id="section_name" name="section_name" onchange="this.form.submit()" style="background: var(--bg-primary); color: var(--text-main); border: 1px solid var(--glass-border); padding: 0.4rem 0.8rem; border-radius: 4px;">
+                        {% if sections %}
+                            {% for sec in sections %}
+                                <option value="{{ sec.section_name }}" {% if selected_section == sec.section_name %}selected{% endif %}>Section {{ sec.section_name }}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="">-- No Sections --</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </form>
+
+            {% if timetable %}
+                <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">
+                        Schedule for: <strong>{{ selected_branch }}</strong> (Section {{ selected_section }}, Year {{ selected_year }}, Semester {{ selected_semester }})
+                    </span>
+                </div>
+            {% endif %}
+
             <div class="timetable-grid-container">
                 <table class="timetable-table">
                     <thead>

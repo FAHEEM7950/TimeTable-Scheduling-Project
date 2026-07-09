@@ -57,10 +57,96 @@ def generate_csrf_token():
 
 app.jinja_env.globals["csrf_token"] = generate_csrf_token
 
+@app.template_filter('time_to_str')
+def time_to_str_filter(val):
+    if not val:
+        return "09:00"
+    if isinstance(val, str):
+        return val[:5]
+    if hasattr(val, 'total_seconds'): # timedelta
+        total_secs = int(val.total_seconds())
+        hours = total_secs // 3600
+        mins = (total_secs % 3600) // 60
+        return f"{hours:02d}:{mins:02d}"
+    if hasattr(val, 'strftime'): # time or datetime object
+        return val.strftime("%H:%M")
+    return str(val)
+
+def get_timing_settings(college_id=None):
+    if not college_id:
+        college_id = session.get('college_id')
+    
+    defaults = {
+        'start_time': '09:00:00',
+        'period_duration': 60,
+        'break_after_period': 3,
+        'break_duration': 60
+    }
+    
+    if college_id:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM timetable_settings WHERE college_id = %s", (college_id,))
+            settings = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if settings:
+                return settings
+        except Exception as e:
+            print(f"Error fetching timetable settings: {e}")
+            
+    return defaults
+
+def get_period_labels(college_id=None):
+    settings = get_timing_settings(college_id)
+    start_time_val = settings.get('start_time', '09:00:00')
+    period_duration = settings.get('period_duration', 60)
+    break_after_period = settings.get('break_after_period', 3)
+    break_duration = settings.get('break_duration', 60)
+
+    start_time_str = "09:00:00"
+    if isinstance(start_time_val, str):
+        start_time_str = start_time_val
+    elif hasattr(start_time_val, 'total_seconds'):
+        total_secs = int(start_time_val.total_seconds())
+        hours = total_secs // 3600
+        mins = (total_secs % 3600) // 60
+        start_time_str = f"{hours:02d}:{mins:02d}:00"
+    elif hasattr(start_time_val, 'strftime'):
+        start_time_str = start_time_val.strftime("%H:%M:%S")
+
+    from datetime import datetime, timedelta
+    try:
+        current_time = datetime.strptime(start_time_str, "%H:%M:%S")
+    except ValueError:
+        try:
+            current_time = datetime.strptime(start_time_str, "%H:%M")
+        except ValueError:
+            current_time = datetime.strptime("09:00:00", "%H:%M:%S")
+
+    labels = []
+    for i in range(1, 8):
+        start_label = current_time.strftime("%I:%M %p")
+        end_time = current_time + timedelta(minutes=period_duration)
+        end_label = end_time.strftime("%I:%M %p")
+        labels.append(f"{start_label} - {end_label}")
+        
+        current_time = end_time
+        if i == break_after_period:
+            current_time += timedelta(minutes=break_duration)
+            
+    return labels
+
 # Context processor to make "request" and "session" available in templates
 @app.context_processor
 def inject_context():
-    return dict(session=session)
+    college_id = session.get('college_id')
+    return dict(
+        session=session,
+        timing_settings=get_timing_settings(college_id),
+        period_labels=get_period_labels(college_id)
+    )
 
 # Twilio SMS Send Helper (Configurable by admin)
 def send_sms_otp(phone, otp):
@@ -633,8 +719,8 @@ def manage_subjects():
     cursor.close()
     conn.close()
 
-    success = locals().get('success_msg')
-    error = locals().get('error_msg')
+    success = session.pop('gen_success', None) or locals().get('success_msg')
+    error = session.pop('gen_error', None) or locals().get('error_msg')
 
     return render_template(
         'manage_subjects.html',
@@ -658,6 +744,44 @@ def delete_subject(subject_id):
     conn.commit()
     cursor.close()
     conn.close()
+    return redirect(url_for('manage_subjects'))
+
+@app.route('/save_timing_settings', methods=['POST'])
+def save_timing_settings():
+    college_id = session.get('college_id')
+    if not college_id:
+        return redirect(url_for('home'))
+
+    start_time = request.form.get('start_time', '09:00')
+    period_duration = int(request.form.get('period_duration', '60'))
+    break_after_period = int(request.form.get('break_after_period', '3'))
+    break_duration = int(request.form.get('break_duration', '60'))
+
+    if len(start_time) == 5:
+        start_time_sql = f"{start_time}:00"
+    else:
+        start_time_sql = start_time
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO timetable_settings (college_id, start_time, period_duration, break_after_period, break_duration)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+                start_time = VALUES(start_time),
+                period_duration = VALUES(period_duration),
+                break_after_period = VALUES(break_after_period),
+                break_duration = VALUES(break_duration)
+        """, (college_id, start_time_sql, period_duration, break_after_period, break_duration))
+        conn.commit()
+        session['gen_success'] = "Timing configuration updated successfully!"
+    except mysql.connector.Error as err:
+        session['gen_error'] = f"Failed to save timing settings: {err.msg}"
+    finally:
+        cursor.close()
+        conn.close()
+
     return redirect(url_for('manage_subjects'))
 
 # ----------------- STUDENT PORTAL -----------------
@@ -1141,18 +1265,62 @@ def faculty_view_timetable():
     cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
     college = cursor.fetchone()
 
-    # Get published timetables
+    # Lock branch/department to faculty's own department
+    selected_branch = faculty['department']
+
+    selected_section = request.args.get('section_name', '')
+    try:
+        selected_year = int(request.args.get('year_level', '1'))
+    except ValueError:
+        selected_year = 1
+
+    valid_sem_a = (selected_year - 1) * 2 + 1
+    valid_sem_b = (selected_year - 1) * 2 + 2
+
+    selected_semester_str = request.args.get('semester', '')
+    try:
+        selected_semester = int(selected_semester_str)
+        if selected_semester not in (valid_sem_a, valid_sem_b):
+            selected_semester = valid_sem_a
+    except ValueError:
+        selected_semester = valid_sem_a
+
+    # Get sections for this branch and year level
+    cursor.execute(
+        "SELECT * FROM sections WHERE college_id = %s AND branch = %s AND year_level = %s ORDER BY section_name",
+        (college_id, selected_branch, selected_year)
+    )
+    sections = cursor.fetchall()
+
+    # Fallback to first available section if none is selected
+    if not selected_section and sections:
+        selected_section = sections[0]['section_name']
+    elif not selected_section:
+        selected_section = 'A'
+
+    # Get published timetable for the selected branch, year, semester, section
     cursor.execute(
         """SELECT * FROM timetable 
-           WHERE college_id = %s AND published = 1
-           ORDER BY branch, section_name, year_level, semester, FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')""",
-        (college_id,)
+           WHERE college_id = %s AND branch = %s AND section_name = %s AND year_level = %s AND semester = %s AND published = 1
+           ORDER BY FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')""",
+        (college_id, selected_branch, selected_section, selected_year, selected_semester)
     )
     timetable = cursor.fetchall()
     cursor.close()
     conn.close()
 
-    return render_template('faculty_view_timetable.html', faculty=faculty, college=college, timetable=timetable)
+    return render_template(
+        'faculty_view_timetable.html',
+        faculty=faculty,
+        college=college,
+        timetable=timetable,
+        sections=sections,
+        selected_branch=selected_branch,
+        selected_section=selected_section,
+        selected_year=selected_year,
+        selected_semester=selected_semester
+    )
+
 
 @app.route('/faculty_experience_form', methods=['GET', 'POST'])
 def faculty_experience_form():
@@ -1631,6 +1799,138 @@ def stress_dashboard():
         selected_section=selected_section
     )
 
+# ----------------- VENUE MANAGEMENT -----------------
+
+@app.route('/manage_venues', methods=['GET', 'POST'])
+def manage_venues():
+    college_id = session.get('college_id')
+    admin_branch = session.get('admin_branch')
+    if not college_id:
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    success_msg = None
+    error_msg = None
+
+    if request.method == 'POST':
+        building_name  = request.form.get('building_name', '').strip()
+        room_number    = request.form.get('room_number', '').strip()
+        room_type      = request.form.get('room_type', '').strip()
+        department     = admin_branch if admin_branch else request.form.get('department', '').strip()
+        floor_number   = request.form.get('floor_number', '').strip()
+        max_capacity   = request.form.get('max_capacity', '0').strip()
+        room_status    = request.form.get('room_status', 'Available').strip()
+        remarks        = request.form.get('remarks', '').strip()
+        has_projector  = 1 if request.form.get('has_projector') else 0
+        has_ac         = 1 if request.form.get('has_ac') else 0
+        has_smart_board = 1 if request.form.get('has_smart_board') else 0
+        is_wifi_available = 1 if request.form.get('is_wifi_available') else 0
+
+        if not building_name or not room_number or not room_type or not department or not floor_number or not max_capacity:
+            error_msg = "All required fields must be filled."
+        else:
+            try:
+                cursor.execute(
+                    """INSERT INTO venues
+                       (college_id, building_name, room_number, room_type, department, floor_number,
+                        max_capacity, has_projector, has_ac, has_smart_board, is_wifi_available, room_status, remarks)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (college_id, building_name, room_number, room_type, department, floor_number,
+                     int(max_capacity), has_projector, has_ac, has_smart_board, is_wifi_available,
+                     room_status, remarks or None)
+                )
+                conn.commit()
+                success_msg = f"Classroom '{building_name} - {room_number}' added successfully!"
+            except mysql.connector.Error as err:
+                error_msg = f"Database Error: {err.msg}"
+
+    cursor.execute("SELECT * FROM colleges WHERE id = %s", (college_id,))
+    college = cursor.fetchone()
+
+    # Fetch venues
+    if admin_branch:
+        cursor.execute(
+            "SELECT * FROM venues WHERE college_id = %s AND (department = %s OR department = 'Common (Shared)') ORDER BY building_name, room_number",
+            (college_id, admin_branch)
+        )
+    else:
+        cursor.execute("SELECT * FROM venues WHERE college_id = %s ORDER BY building_name, room_number", (college_id,))
+    venues = cursor.fetchall()
+
+    # Fetch subjects for assignment dropdown (filtered by admin branch)
+    if admin_branch:
+        cursor.execute(
+            """SELECT s.*, v.building_name, v.room_number
+               FROM subjects s
+               LEFT JOIN venues v ON s.venue_id = v.id
+               WHERE s.college_id = %s AND s.branch = %s
+               ORDER BY s.year_level, s.semester, s.section_name, s.subject_name""",
+            (college_id, admin_branch)
+        )
+    else:
+        cursor.execute(
+            """SELECT s.*, v.building_name, v.room_number
+               FROM subjects s
+               LEFT JOIN venues v ON s.venue_id = v.id
+               WHERE s.college_id = %s
+               ORDER BY s.branch, s.year_level, s.semester, s.section_name, s.subject_name""",
+            (college_id,)
+        )
+    subjects = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        'manage_venues.html',
+        college=college,
+        admin_branch=admin_branch,
+        venues=venues,
+        subjects=subjects,
+        success=success_msg,
+        error=error_msg
+    )
+
+
+@app.route('/delete_venue/<int:venue_id>', methods=['POST'])
+def delete_venue(venue_id):
+    college_id = session.get('college_id')
+    if not college_id:
+        return redirect(url_for('home'))
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Unassign subjects using this venue first
+    cursor.execute("UPDATE subjects SET venue_id = NULL WHERE venue_id = %s AND college_id = %s", (venue_id, college_id))
+    cursor.execute("DELETE FROM venues WHERE id = %s AND college_id = %s", (venue_id, college_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('manage_venues'))
+
+
+@app.route('/assign_venue_to_subject', methods=['POST'])
+def assign_venue_to_subject():
+    college_id = session.get('college_id')
+    if not college_id:
+        return redirect(url_for('home'))
+    subject_id = request.form.get('subject_id', '').strip()
+    venue_id   = request.form.get('venue_id', '').strip()
+    # Allow unassigning (venue_id = '')
+    venue_val = int(venue_id) if venue_id else None
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE subjects SET venue_id = %s WHERE id = %s AND college_id = %s",
+        (venue_val, subject_id, college_id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return redirect(url_for('manage_venues'))
+
+
 @app.route('/manage_periods')
 def manage_periods():
     college_id = session.get('college_id')
@@ -1681,9 +1981,12 @@ def generate_timetable():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Fetch subjects
+    # Fetch subjects with assigned venue (if any)
     cursor.execute(
-        "SELECT * FROM subjects WHERE college_id = %s AND branch = %s AND year_level = %s AND semester = %s AND section_name = %s",
+        """SELECT s.*, v.room_number AS venue_room
+           FROM subjects s
+           LEFT JOIN venues v ON s.venue_id = v.id
+           WHERE s.college_id = %s AND s.branch = %s AND s.year_level = %s AND s.semester = %s AND s.section_name = %s""",
         (college_id, branch, year_level, semester, section_name)
     )
     subjects = cursor.fetchall()
@@ -1803,7 +2106,8 @@ def generate_timetable():
                 if schedule[day][period] == 'FREE':
                     if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
                         continue
-                    schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
+                    venue_label = f" @ {sub['venue_room']}" if sub.get('venue_room') else ""
+                    schedule[day][period] = f"{sub['subject_name']} ({assigned_fac}){venue_label}"
                     scheduled_count += 1
                     break
 
@@ -1816,7 +2120,8 @@ def generate_timetable():
                     if schedule[day][period] == 'FREE':
                         if assigned_fac != "TBD" and is_faculty_busy(assigned_fac, day, period):
                             continue
-                        schedule[day][period] = f"{sub['subject_name']} ({assigned_fac})"
+                        venue_label = f" @ {sub['venue_room']}" if sub.get('venue_room') else ""
+                        schedule[day][period] = f"{sub['subject_name']} ({assigned_fac}){venue_label}"
                         scheduled_count += 1
                         if scheduled_count >= periods_to_fill:
                             break
