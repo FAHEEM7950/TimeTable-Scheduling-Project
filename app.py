@@ -277,6 +277,23 @@ def developer_dashboard():
     conn.close()
     return render_template('developer_dashboard.html', colleges=colleges)
 
+@app.route('/developer_delete_college/<int:college_id>', methods=['POST'])
+def developer_delete_college(college_id):
+    if not session.get('developer_logged_in'):
+        return redirect(url_for('developer_login'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM colleges WHERE id = %s", (college_id,))
+        conn.commit()
+    except mysql.connector.Error as err:
+        print(f"Error deleting college: {err.msg}")
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect(url_for('developer_dashboard'))
+
 @app.route('/developer_college_details/<int:college_id>')
 def developer_college_details(college_id):
     if not session.get('developer_logged_in'):

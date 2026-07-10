@@ -63,8 +63,12 @@
                                     <td><strong>{{ college.college_name }}</strong></td>
                                     <td><code>{{ college.college_code }}</code></td>
                                     <td>{{ college.email }}</td>
-                                    <td>
+                                    <td style="display: flex; gap: 0.5rem; align-items: center;">
                                         <a href="/developer_college_details/{{ college.id }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto;">Inspect College</a>
+                                        <form method="POST" action="/developer_delete_college/{{ college.id }}" style="display:inline;" onsubmit="return confirm('⚠️ Delete {{ college.college_name }}? This will permanently delete ALL college data including admins, faculty, students, subjects, timetables, and venues. This CANNOT be undone.')">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #ef4444;">🗑 Delete</button>
+                                        </form>
                                     </td>
                                 </tr>
                             {% endfor %}

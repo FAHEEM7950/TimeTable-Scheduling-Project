@@ -76,8 +76,13 @@
                                             <span style="color: var(--warning); font-weight: 600;">○ Draft</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <form method="POST" action="/toggle_publish_timetable" style="display:inline;">
+                                    <td style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <!-- <a href="{{ url_for('admin_view_timetable') }}?branch={{ sch.branch }}&section_name={{ sch.section_name }}&year_level={{ sch.year_level }}&semester={{ sch.semester }}" 
+                                           class="btn btn-secondary" 
+                                           style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;">
+                                            👁 View
+                                        </a> -->
+                                        <form method="POST" action="/toggle_publish_timetable" style="display:inline; margin: 0;">
                                             <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="branch" value="{{ sch.branch }}">
                                             <input type="hidden" name="section_name" value="{{ sch.section_name }}">
@@ -85,9 +90,9 @@
                                             <input type="hidden" name="semester" value="{{ sch.semester }}">
                                             <input type="hidden" name="published" value="{{ sch.published }}">
                                             {% if sch.published == 1 %}
-                                                <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto;">Unpublish</button>
+                                                <button type="submit" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto; margin: 0;">Unpublish</button>
                                             {% else %}
-                                                <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto; background: var(--success);">Publish Schedule</button>
+                                                <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; width: auto; background: var(--success); margin: 0;">Publish Schedule</button>
                                             {% endif %}
                                         </form>
                                     </td>
